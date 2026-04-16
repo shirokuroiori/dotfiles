@@ -1,0 +1,95 @@
+format = """$all $character"""
+
+right_format = """
+$time
+"""
+
+
+[time]
+disabled = false
+format = '[  $time ](bold fg:#acaaad)'
+time_format  = '%F %T'
+utc_time_offset = 'local'
+
+
+[battery]
+disabled = true
+
+# git section
+[git_branch]
+symbol = '󰊢 '
+style = 'bold fg:purple'
+
+[git_status]
+disabled = false
+style = 'bold fg:purple'
+
+ahead = '  ${count}'
+behind = '  ${count}'
+diverged = ' ⇕${count}'
+up_to_date = '✨'
+
+modified = ' 󱇨 ${count}'
+deleted = ' 󱀷 ${count}'
+renamed = ' 󰁕${count}'
+
+untracked = ' ${count}'
+staged = ' 󱎯 ${count}'
+stashed = '  ${count}'
+conflicted = '⇕'
+
+format = """
+[$untracked](fg:#00fc65)\
+[$modified](fg:#ff8700)\
+[$conflicted]($style)\
+[$stashed]($style)\
+[$typechanged]($style)\
+[$staged](fg:#00ed96)\
+[$renamed]($style)\
+[$deleted](fg:#fc6d77)\
+[](fg:#6c5c82)\
+[$ahead_behind ]($style)\
+"""
+
+[git_metrics]
+disabled = true
+only_nonzero_diffs = true
+added_style = 'bold fg:#a6e3a1 bg:#45475a'
+deleted_style ='bold fg:#fc6d77 bg:#45475a'
+format = """
+[](fg:#45475a)[  ](fg:#89dceb bg:#45475a)\
+[ $added ]($added_style)[ $deleted ]($deleted_style)[](fg:#45475a)\
+"""
+
+
+# python section
+[python]
+pyenv_version_name = true
+style = 'bold fg:27'
+python_binary = ['./venv/bin/python', 'python']
+symbol = '󰌠 '
+
+
+[aws]
+style = 'bold fg:202'
+symbol = '󰸏 '
+
+
+[directory]
+truncation_length = 100
+truncate_to_repo = false
+truncation_symbol = "…/"
+
+
+[custom.git_scope]
+disabled = false
+command = 'git config user.name'
+description = 'The currently configured Git user.{email,name}'
+format = '$symbol$output '
+style = 'blue bold'
+symbol = ' '
+when = true
+
+[nodejs]
+style = "bold fg:#50fa7b"
+symbol = "󰎙 "

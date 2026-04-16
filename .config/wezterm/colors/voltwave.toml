@@ -1,0 +1,93 @@
+# WezTerm colors for voltwave — derived from voltwave.nvim lua/voltwave/palette.lua
+# (and editor.lua TabLine / Cursor). Tweak the plugin palette there first, then mirror here.
+
+[colors]
+# ANSI 0–7: black, red, green, yellow, blue, magenta, cyan, white
+ansi = [
+    '#241B2F',   # 0 black   — bg_alt
+    '#FE4450',   # 1 red     — red
+    '#50fa7b',   # 2 green   — green（主役）
+    '#FFCC00',   # 3 yellow  — yellow
+    '#AF6DF9',   # 4 blue    — purple（ターミナル慣例で blue スロット）
+    '#FC199A',   # 5 magenta — pink
+    '#38daff',   # 6 cyan    — cyan
+    '#F8F8F8',   # 7 white   — fg_bright
+]
+# ANSI 8–15: bright black … bright white（palette 内の二次色で補完）
+brights = [
+    '#495495',   # 8  bright black   — comment
+    '#FF8B39',   # 9  bright red     — orange（warn; palette に bright red 無し）
+    '#8EF4C6',   # 10 bright green   — green3
+    '#FFCC00',   # 11 bright yellow  — yellow（palette に bright yellow 無し）
+    '#BF8AFA',   # 12 bright blue    — purple の明トーン
+    '#FC199A',   # 13 bright magenta — pink（git 等の bold magenta）
+    '#81E8FF',   # 14 bright cyan    — cyan の明トーン（ディレクトリ等）
+    '#F8F8F8',   # 15 bright white    — fg_bright
+]
+background = '#200933'
+foreground = '#F8F8F8'
+
+# Cursor — editor.lua: Cursor = { fg = bg, bg = green2 }
+cursor_bg = '#72F1B8'
+cursor_border = '#72F1B8'
+cursor_fg = '#200933'
+
+compose_cursor = '#FF8B39'
+
+# Visual — editor.lua: Visual = { bg = selection }
+selection_bg = '#463465'
+selection_fg = '#A0D8D8'
+
+scrollbar_thumb = '#34204A'
+split = '#8c57c7'
+
+[colors.indexed]
+
+# Tab bar — editor.lua TabLine / TabLineSel / TabLineFill に寄せる
+[colors.tab_bar]
+background = '#200933'
+
+[colors.tab_bar.active_tab]
+bg_color = '#2A1340'
+fg_color = '#72F1B8'
+intensity = 'Normal'
+italic = false
+strikethrough = false
+underline = 'None'
+
+[colors.tab_bar.inactive_tab]
+bg_color = '#241B2F'
+fg_color = '#6B7A8F'
+intensity = 'Normal'
+italic = false
+strikethrough = false
+underline = 'None'
+
+[colors.tab_bar.inactive_tab_hover]
+bg_color = '#34204A'
+fg_color = '#A0D8D8'
+intensity = 'Normal'
+italic = true
+strikethrough = false
+underline = 'None'
+
+[colors.tab_bar.new_tab]
+bg_color = '#241B2F'
+fg_color = '#6B7A8F'
+intensity = 'Normal'
+italic = false
+strikethrough = false
+underline = 'None'
+
+[colors.tab_bar.new_tab_hover]
+bg_color = '#FC199A'
+fg_color = '#F8F8F8'
+intensity = 'Normal'
+italic = true
+strikethrough = false
+underline = 'None'
+
+[metadata]
+aliases = []
+author = 'voltwave.nvim palette (mirrored)'
+name = 'voltwave'
