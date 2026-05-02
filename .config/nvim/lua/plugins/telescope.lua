@@ -69,6 +69,27 @@ return {
   "nvim-telescope/telescope.nvim",
   version = "0.1.x",
   dependencies = { "nvim-lua/plenary.nvim" },
+  opts = {
+    defaults = {
+      path_display = { "smart" },
+      mappings = {
+        i = {
+          ["<C-y>"] = function(prompt_bufnr)
+            local entry = require("telescope.actions.state").get_selected_entry()
+            local path = entry and (entry.path or entry.filename or entry.value)
+            if path then print(path) end
+          end,
+        },
+        n = {
+          ["<C-y>"] = function(prompt_bufnr)
+            local entry = require("telescope.actions.state").get_selected_entry()
+            local path = entry and (entry.path or entry.filename or entry.value)
+            if path then print(path) end
+          end,
+        },
+      },
+    },
+  },
   keys = {
     { "<leader>ff", "<cmd>Telescope find_files<CR>",  desc = "Find files" },
     { "<leader>fp", find_files_by_glob,               desc = "Find files by glob pattern" },
