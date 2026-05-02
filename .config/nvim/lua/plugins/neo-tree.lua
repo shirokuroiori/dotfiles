@@ -23,6 +23,9 @@ return {
     opts = {
       -- options go here
       filesystem = {
+        follow_current_file = {
+          enabled = true, -- アクティブバッファをツリーで自動ハイライト
+        },
         filtered_items = {
           visible = true,
           hide_dotfiles = false,
@@ -57,15 +60,6 @@ return {
           },
         },
       },
-      -- function()
-      --   vim.api.nvim_set_hl(0, "NeoTreeGitUntracked", { fg = "#00ffff" })
-      -- end
     },
-    config = function(_, opts)
-      require('neo-tree').setup(opts)
-      vim.api.nvim_set_hl(0, "NeoTreeGitUntracked", { fg = "#00fc65" })
-      -- vim.api.nvim_set_hl(0, "NeoTreeGitUnstaged", { fg = "#00ffff" })
-      -- vim.api.nvim_set_hl(0, "NeoTreeGitModified", { fg = "#00ffff" })
-    end
   }
 }

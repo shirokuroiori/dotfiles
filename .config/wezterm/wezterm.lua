@@ -102,5 +102,39 @@ config.use_ime = true
 config.keys = require 'keys'
 
 
+-- タブタイトル: アイコン + 末尾ディレクトリ名
+wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_width)
+  local pane = tab.active_pane
+
+  local cwd = ''
+  if pane.current_working_dir then
+    local path = pane.current_working_dir.file_path
+    cwd = path:match('[^/]+/?$') or path
+    cwd = cwd:gsub('/$', '')
+  end
+
+  local process = pane.foreground_process_name:match('[^/]+$') or ''
+  local icons = {
+    nvim    = ' ',
+    vim     = ' ',
+    zsh     = '  ',
+    bash    = '  ',
+    ssh     = '󰣀 ',
+    git     = '󰊢 ',
+    lazygit = '󰊢 ',
+    claude  = '󱚤 ',
+  }
+  local icon = icons[process] or '  '
+
+  local title = string.format(' %d. %s%s ', tab.tab_index + 1, icon, cwd)
+
+  if tab.is_active then
+    return {
+      { Text = title },
+    }
+  end
+  return { { Text = title } }
+end)
+
 -- Finally, return the configuration to wezterm:
 return config
