@@ -85,4 +85,10 @@ return {
     mods = 'ALT|SHIFT',
     action = wezterm.action.AdjustPaneSize { 'Right', 1 },
   },
+  -- ペインのズームトグル（全画面↔分割）
+  {
+    key = 'z',
+    mods = 'CTRL|SHIFT',
+    action = wezterm.action.TogglePaneZoomState,
+  },
 }
