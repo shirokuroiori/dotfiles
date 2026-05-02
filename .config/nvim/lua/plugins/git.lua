@@ -2,6 +2,9 @@
 return {
   {
     "lewis6991/gitsigns.nvim",
+    keys = {
+      { "<leader>gb", function() require("gitsigns").blame_line({ full = true }) end, desc = "Git blame line" },
+    },
     config = function()
       require("gitsigns").setup({
         signs = {
@@ -19,6 +22,14 @@ return {
           changedelete = { text = "~" },
         },
         sign_priority = 20,
+        preview_config = {
+          border = "rounded",
+        },
+        current_line_blame = true,
+        current_line_blame_opts = {
+          delay = 500,
+          virt_text_pos = "eol",
+        },
       })
     end,
   },
