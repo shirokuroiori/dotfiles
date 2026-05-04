@@ -6,9 +6,9 @@ return {
     config = function()
       require('voltwave').setup({
         bolt = true,
-        transparent = true,
-        glow = true,
-        glow_strength = 0.2,
+        transparent = false,
+        glow = false,
+        -- glow_strength = 0.2,
       })
       vim.cmd.colorscheme('voltwave')
       require('lualine').setup({
@@ -17,5 +17,6 @@ return {
         },
       })
     end,
-  }
+  },
+  { "Mofiqul/dracula.nvim" },
 }

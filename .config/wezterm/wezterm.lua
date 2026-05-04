@@ -21,8 +21,8 @@ config.initial_cols = 150
 config.initial_rows = 50
 
 -- font size
-config.font_size = 16
-config.line_height = 1.1
+config.font_size = 15
+config.line_height = 1.2
 config.font = wezterm.font("Bizin Gothic Discord NF", { weight = 600 })
 -- config.font = wezterm.font("RictyDiminishedDiscord Nerd Font", { weight = 600 })
 -- config.font = wezterm.font("HackGen Console NF", { weight = 600 })

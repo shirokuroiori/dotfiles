@@ -9,7 +9,7 @@ return {
     event = { "BufReadPost", "BufNewFile" },
     config = function()
       require("nvim-treesitter.configs").setup({
-        ensure_installed = { "python", "lua", "vim", "query", "javascript", "typescript", "vue", "tsx" },
+        ensure_installed = { "python", "lua", "vim", "query", "javascript", "typescript", "vue", "tsx", "prisma", "regex", "rust" },
         ignore_install = {},
         modules = {},
         sync_install = false,
