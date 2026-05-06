@@ -35,6 +35,9 @@ return {
         },
         query = {
           [""] = "rainbow-delimiters",
+          ["tsx"] = "rainbow-parens",            -- JSXタグを除外し括弧のみ
+          ["javascript"] = "rainbow-delimiters", -- Reactタグなし（デフォルト維持）
+          ["vue"] = "rainbow-delimiters-parens", -- HTMLタグを除外し{{ }}のみ
         },
         blacklist = excluded_filetypes,
       }
