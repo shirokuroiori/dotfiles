@@ -1,6 +1,6 @@
 return {
   {
-    -- 'shirokuroiori/voltwave.nvim',
+    'shirokuroiori/voltwave.nvim',
     lazy = false,
     priority = 1000,
     config = function()
