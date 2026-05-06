@@ -24,8 +24,8 @@ style = 'bold fg:purple'
 disabled = false
 style = 'bold fg:purple'
 
-ahead = '  ${count}'
-behind = '  ${count}'
+ahead = '  ${count}'
+behind = '  ${count}'
 diverged = ' ⇕${count}'
 up_to_date = '✨'
 
@@ -34,19 +34,19 @@ deleted = ' 󱀷 ${count}'
 renamed = ' 󰁕${count}'
 
 untracked = ' ${count}'
-staged = ' 󱎯 ${count}'
+staged = ' 󱇧 ${count}'
 stashed = '  ${count}'
 conflicted = '⇕'
 
 format = """
 [$untracked](fg:#00fc65)\
-[$modified](fg:#ff8700)\
+[$modified](fg:#27d7e8)\
 [$conflicted]($style)\
 [$stashed]($style)\
 [$typechanged]($style)\
-[$staged](fg:#00ed96)\
+[$staged](fg:#27d7e8)\
 [$renamed]($style)\
-[$deleted](fg:#fc6d77)\
+[$deleted](fg:#FF4D4D)\
 [](fg:#6c5c82)\
 [$ahead_behind ]($style)\
 """
