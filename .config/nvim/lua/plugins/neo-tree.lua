@@ -15,7 +15,7 @@ return {
       window = {
         position = "float",
         popup = {
-          size = { width = "40%", height = "80%" },
+          size = { width = "55%", height = "80%" },
           position = "50%",
         },
       },
