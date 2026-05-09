@@ -12,7 +12,13 @@ return {
       { "<leader>e", "<cmd>Neotree toggle<CR>", mode = "n", desc = "Neotree toggle" }
     },
     opts = {
-      -- options go here
+      window = {
+        position = "float",
+        popup = {
+          size = { width = "40%", height = "80%" },
+          position = "50%",
+        },
+      },
       filesystem = {
         follow_current_file = {
           enabled = true, -- アクティブバッファをツリーで自動ハイライト
