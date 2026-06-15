@@ -6,7 +6,7 @@ return {
     config = function()
       require('voltwave').setup({
         bolt = true,
-        transparent = false,
+        transparent = true,
         glow = false,
         -- glow_strength = 0.2,
       })
