@@ -12,13 +12,6 @@ return {
       { "<leader>e", "<cmd>Neotree toggle<CR>", mode = "n", desc = "Neotree toggle" }
     },
     opts = {
-      window = {
-        position = "float",
-        popup = {
-          size = { width = "55%", height = "80%" },
-          position = "50%",
-        },
-      },
       filesystem = {
         follow_current_file = {
           enabled = true, -- アクティブバッファをツリーで自動ハイライト
@@ -27,6 +20,7 @@ return {
           visible = true,
           hide_dotfiles = false,
           hide_gitignored = true,
+          hide_by_name = { ".git" },
         }
       },
       default_component_configs = {

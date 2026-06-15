@@ -21,7 +21,7 @@ config.initial_cols = 150
 config.initial_rows = 50
 
 -- font size
-config.font_size = 15
+config.font_size = 14
 config.line_height = 1.2
 config.font = wezterm.font("Bizin Gothic Discord NF", { weight = 600 })
 -- config.font = wezterm.font("RictyDiminishedDiscord Nerd Font", { weight = 600 })
@@ -96,10 +96,21 @@ config.tab_bar_at_bottom = true
 -- ime
 config.use_ime = true
 
+-- Cmd 等の修飾キーを nvim から識別できるように kitty keyboard protocol を有効化
+config.enable_kitty_keyboard = true
+
 
 
 -- smart-splits.nvim keymaps
 config.keys = require 'keys'
+
+-- smart-splits.nvim との連携。Ctrl+hjkl / Alt+hjkl を nvim 内なら送出、
+-- wezterm シェルペインなら ActivatePaneDirection / AdjustPaneSize に自動分岐する。
+local smart_splits = wezterm.plugin.require 'https://github.com/mrjones2014/smart-splits.nvim'
+smart_splits.apply_to_config(config, {
+  direction_keys = { 'h', 'j', 'k', 'l' },
+  modifiers = { move = 'CTRL', resize = 'META' },
+})
 
 
 -- タブタイトル: アイコン + 末尾ディレクトリ名

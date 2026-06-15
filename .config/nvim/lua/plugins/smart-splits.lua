@@ -20,7 +20,7 @@ return {
     },
     -- マルチプレクサ統合設定
     multiplexer_integration = "wezterm", -- weztermを使用
-    at_edge = "stop",                    -- 端に到達したら停止（マルチプレクサに移動しない）
+    at_edge = "wrap",                    -- 端でwezterm側ペインへ移譲
   },
   config = function(_, opts)
     local smart_splits = require("smart-splits")

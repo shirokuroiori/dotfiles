@@ -1,2 +1,12 @@
 # ~/.config/lazygit/config.yml
+gui:
+    theme:
+      activeBorderColor:
+        - '#B6FF00'
+        - bold
+      inactiveBorderColor:
+        - '#03E1FF'
+      searchingActiveBorderColor:
+        - '#B6FF00'
+        - bold
 
