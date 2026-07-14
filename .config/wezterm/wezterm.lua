@@ -104,6 +104,26 @@ config.enable_kitty_keyboard = true
 -- smart-splits.nvim keymaps
 config.keys = require 'keys'
 
+-- 検索モードを Esc で抜けてもパターンがペインに残り、次にコピーモードへ入ると
+-- 検索プロンプト付きのオーバーレイが開いてしまう。Esc で破棄してから閉じる。
+local key_tables = wezterm.gui.default_key_tables()
+local search_mode = {}
+for _, mapping in ipairs(key_tables.search_mode) do
+  if mapping.key ~= 'Escape' then
+    table.insert(search_mode, mapping)
+  end
+end
+table.insert(search_mode, {
+  key = 'Escape',
+  mods = 'NONE',
+  action = wezterm.action.Multiple {
+    wezterm.action.CopyMode 'ClearPattern',
+    wezterm.action.CopyMode 'Close',
+  },
+})
+key_tables.search_mode = search_mode
+config.key_tables = key_tables
+
 -- smart-splits.nvim との連携。Ctrl+hjkl / Alt+hjkl を nvim 内なら送出、
 -- wezterm シェルペインなら ActivatePaneDirection / AdjustPaneSize に自動分岐する。
 local smart_splits = wezterm.plugin.require 'https://github.com/mrjones2014/smart-splits.nvim'
