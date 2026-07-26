@@ -118,7 +118,7 @@ config.max_fps = 120
 --       aaaaaaaaaaaaaaa♻️aaa
 -- color schema
 config.color_scheme = "voltwave"
-config.window_background_opacity = 0.75
+config.window_background_opacity = 1
 
 -- macOS の背景ブラーは「文字のコントラストを削る」最大の要因。実測（ハイフンのピーク強度）:
 --   不透明                 81.8  (Ghostty 不透明 = 80.8 とほぼ同じ)
@@ -200,23 +200,26 @@ config.keys = require 'keys'
 
 -- 検索モードを Esc で抜けてもパターンがペインに残り、次にコピーモードへ入ると
 -- 検索プロンプト付きのオーバーレイが開いてしまう。Esc で破棄してから閉じる。
-local key_tables = wezterm.gui.default_key_tables()
-local search_mode = {}
-for _, mapping in ipairs(key_tables.search_mode) do
-  if mapping.key ~= 'Escape' then
-    table.insert(search_mode, mapping)
+-- wezterm.gui は GUI プロセスでのみ存在する（mux サーバや wezterm cli の評価文脈では nil）。
+if wezterm.gui then
+  local key_tables = wezterm.gui.default_key_tables()
+  local search_mode = {}
+  for _, mapping in ipairs(key_tables.search_mode) do
+    if mapping.key ~= 'Escape' then
+      table.insert(search_mode, mapping)
+    end
   end
+  table.insert(search_mode, {
+    key = 'Escape',
+    mods = 'NONE',
+    action = wezterm.action.Multiple {
+      wezterm.action.CopyMode 'ClearPattern',
+      wezterm.action.CopyMode 'Close',
+    },
+  })
+  key_tables.search_mode = search_mode
+  config.key_tables = key_tables
 end
-table.insert(search_mode, {
-  key = 'Escape',
-  mods = 'NONE',
-  action = wezterm.action.Multiple {
-    wezterm.action.CopyMode 'ClearPattern',
-    wezterm.action.CopyMode 'Close',
-  },
-})
-key_tables.search_mode = search_mode
-config.key_tables = key_tables
 
 -- smart-splits.nvim との連携。Ctrl+hjkl / Alt+hjkl を nvim 内なら送出、
 -- wezterm シェルペインなら ActivatePaneDirection / AdjustPaneSize に自動分岐する。

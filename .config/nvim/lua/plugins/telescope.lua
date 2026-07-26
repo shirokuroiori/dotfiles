@@ -72,6 +72,7 @@ return {
   opts = {
     defaults = {
       path_display = { "smart" },
+      file_ignore_patterns = { "%.git/" },
       mappings = {
         i = {
           ["<C-y>"] = function(prompt_bufnr)
@@ -97,5 +98,27 @@ return {
     { "<leader>fG", live_grep_by_glob,                desc = "Live grep with file glob" },
     { "<leader>fb", "<cmd>Telescope buffers<CR>",     desc = "Buffers" },
     { "<leader>fr", "<cmd>Telescope oldfiles<CR>",    desc = "Recent files" },
+    {
+      "<leader>fc",
+      function()
+        require("telescope.builtin").find_files({
+          prompt_title = "Find files (.config)",
+          hidden = true,
+          search_dirs = { vim.fn.expand("$HOME/dotfiles/.config") },
+        })
+      end,
+      desc = "Find files in .config",
+    },
+    {
+      "<leader>fC",
+      function()
+        require("telescope.builtin").live_grep({
+          prompt_title = "Live grep (.config)",
+          additional_args = { "--hidden" },
+          search_dirs = { vim.fn.expand("$HOME/dotfiles/.config") },
+        })
+      end,
+      desc = "Live grep in .config",
+    },
   },
 }

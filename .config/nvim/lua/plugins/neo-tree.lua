@@ -12,6 +12,40 @@ return {
       { "<leader>e", "<cmd>Neotree toggle<CR>", mode = "n", desc = "Neotree toggle" }
     },
     opts = {
+      window = {
+        mappings = {
+          -- カーソル行のファイル/ディレクトリのパスをクリップボードへ
+          ["Y"] = function(state)
+            local node = state.tree:get_node()
+            if not node or not node.path then
+              return
+            end
+            local path = vim.fn.fnamemodify(node.path, ":.")
+            vim.fn.setreg("+", path)
+            vim.notify("Relative path copied: " .. path)
+          end,
+          -- カーソル行を OS のファイルマネージャで表示（macOS: Finder で選択状態）
+          ["O"] = function(state)
+            local node = state.tree:get_node()
+            if not node or not node.path then
+              return
+            end
+            if vim.fn.has("mac") == 1 then
+              vim.system({ "open", "-R", node.path })
+            else
+              vim.ui.open(node.type == "directory" and node.path or vim.fs.dirname(node.path))
+            end
+          end,
+          ["gy"] = function(state)
+            local node = state.tree:get_node()
+            if not node or not node.path then
+              return
+            end
+            vim.fn.setreg("+", node.path)
+            vim.notify("Absolute path copied: " .. node.path)
+          end,
+        },
+      },
       filesystem = {
         follow_current_file = {
           enabled = true, -- アクティブバッファをツリーで自動ハイライト
