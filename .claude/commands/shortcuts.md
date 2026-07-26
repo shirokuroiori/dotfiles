@@ -45,3 +45,12 @@ LazyGitのコミット画面で `y`
 
 ## NeotreeでファイルをFinderで開く
 `O`
+
+## 参照検索（Lspsaga finder）
+`gr`
+
+## Lspsaga finderでジャンプ
+`o`（開く/ジャンプ）, `v`（vsplit）, `i`（split）, `t`（tab）, `q`（閉じる）
+
+## LSPリネーム（Lspsaga）
+`<leader>rn`

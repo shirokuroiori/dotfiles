@@ -1,3 +1,8 @@
+-- ECSキーの明示的な設定（意図しない動作を防ぐ）
+vim.keymap.set('n', '<Esc>', '<Esc>', { noremap = true, silent = true })
+vim.keymap.set('i', '<Esc>', '<Esc>', { noremap = true, silent = true })
+vim.keymap.set('v', '<Esc>', '<Esc>', { noremap = true, silent = true })
+
 -- クリップボード
 vim.keymap.set({ "n", "v" }, "<leader>y", [["+y]])
 

@@ -7,8 +7,8 @@ return {
     vim.o.showtabline = 0
   end,
   keys = {
-    { "<C-]>", "<cmd>bnext<CR>",   desc = "Next buffer" },
-    { "<leader>bp", "<cmd>bprev<CR>", desc = "Previous buffer" },
+    { "<C-]>", "<cmd>bnext<CR>" },
+    { "<C-[>", "<cmd>bprev<CR>" },
   },
   opts = {
     options = {

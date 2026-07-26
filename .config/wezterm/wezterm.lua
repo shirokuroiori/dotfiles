@@ -118,7 +118,7 @@ config.max_fps = 120
 --       aaaaaaaaaaaaaaa♻️aaa
 -- color schema
 config.color_scheme = "voltwave"
-config.window_background_opacity = 1
+config.window_background_opacity = 0.75
 
 -- macOS の背景ブラーは「文字のコントラストを削る」最大の要因。実測（ハイフンのピーク強度）:
 --   不透明                 81.8  (Ghostty 不透明 = 80.8 とほぼ同じ)

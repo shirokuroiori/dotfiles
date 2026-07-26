@@ -33,6 +33,9 @@ return {
       "DaikyXendo/nvim-material-icon", -- optional（nvim-web-devicons と同一 API）
     },
     opts = {
+      ui = {
+        code_action = "󱧡 ",
+      },
       server_filetype_map = {
         typescript = "typescript",
       },
@@ -87,7 +90,8 @@ return {
       { "gtp",   "<Cmd>Lspsaga peek_type_definition<CR>", mode = "n", noremap = true,      silent = true, desc = "LSP: Peek type definition" },
       { "gf",    "<Cmd>Lspsaga finder<CR>",               mode = "n", desc = "LSP: finder" },
       { "gh",    "<Cmd>Lspsaga hover_doc<CR>",            mode = "n", noremap = true,      silent = true, desc = "LSP: Hover doc" },
-      { "gr",    "<Cmd>Lspsaga rename<CR>",               mode = "n", noremap = true,      silent = true, desc = "LSP: Rename" },
+      { "<leader>rn", "<Cmd>Lspsaga rename<CR>",          mode = "n", noremap = true,      silent = true, desc = "LSP: Rename" },
+      { "gr",    "<Cmd>Lspsaga finder ref<CR>",           mode = "n", noremap = true,      silent = true, desc = "LSP: References" },
       { "ga",    "<Cmd>Lspsaga code_action<CR>",          mode = "n", desc = "LSP: Code action" },
       -- { "ll",    "<Cmd>Lspsaga code_action<CR>",          mode = "n", noremap = true,      silent = true, desc = "LSP: code action" },
       -- { "gj", "<Cmd>Lspsaga diagnostic_jump_next<CR>", mode = "n", noremap = true, silent = true, desc = "LSP: Next diagnostic" },
