@@ -2,10 +2,13 @@ return {
   'akinsho/bufferline.nvim',
   version = "*",
   dependencies = "DaikyXendo/nvim-material-icon",
-  lazy = false,
+  event = "VeryLazy",
+  init = function()
+    vim.o.showtabline = 0
+  end,
   keys = {
-    { "<C-]>", "<cmd>bnext<CR>" },
-    { "<C-[>", "<cmd>bprev<CR>" },
+    { "<C-]>", "<cmd>bnext<CR>",   desc = "Next buffer" },
+    { "<leader>bp", "<cmd>bprev<CR>", desc = "Previous buffer" },
   },
   opts = {
     options = {

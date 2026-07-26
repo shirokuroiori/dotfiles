@@ -1,16 +1,3 @@
--- リーダーの設定
--- Make sure to setup `mapleader` and `maplocalleader` before
--- loading lazy.nvim so that mappings are correct.
--- This is also a good place to setup other settings (vim.opt)
-vim.g.mapleader = " "
-vim.g.maplocalleader = "\\"
-
--- ECSキーの明示的な設定（意図しない動作を防ぐ）
-vim.keymap.set('n', '<Esc>', '<Esc>', { noremap = true, silent = true })
-vim.keymap.set('i', '<Esc>', '<Esc>', { noremap = true, silent = true })
-vim.keymap.set('v', '<Esc>', '<Esc>', { noremap = true, silent = true })
-
-
 -- クリップボード
 vim.keymap.set({ "n", "v" }, "<leader>y", [["+y]])
 
@@ -28,10 +15,6 @@ vim.keymap.set('n', '<leader>dy', function()
     vim.notify('No diagnostics on this line', vim.log.levels.WARN)
   end
 end, { desc = 'Copy line diagnostics to clipboard' })
-
--- VSCodeやCursor環境の検出
-local is_vscode = vim.g.vscode ~= nil
-local is_cursor = vim.env.CURSOR ~= nil
 
 -- Telescope のキーマップは plugins/telescope.lua の lazy keys で定義
 

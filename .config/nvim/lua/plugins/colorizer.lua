@@ -1,6 +1,7 @@
 return {
   {
     "roobert/tailwindcss-colorizer-cmp.nvim",
+    ft = { "css", "scss", "sass", "less", "html", "vue", "javascript", "javascriptreact", "typescript", "typescriptreact" },
     opts = {
       color_square_width = 6,
     }
@@ -8,6 +9,7 @@ return {
   {
     "luckasRanarison/tailwind-tools.nvim",
     name = "tailwind-tools",
+    ft = { "css", "scss", "sass", "less", "html", "vue", "javascript", "javascriptreact", "typescript", "typescriptreact" },
     build = ":UpdateRemotePlugins",
     dependencies = {
       "nvim-treesitter/nvim-treesitter",
@@ -56,9 +58,19 @@ return {
   },
   {
     "catgoose/nvim-colorizer.lua",
-    event = "BufReadPre",
+    ft = {
+      "css", "scss", "sass", "less",
+      "html", "vue",
+      "javascript", "javascriptreact", "typescript", "typescriptreact",
+      "lua", "json", "jsonc", "yaml", "toml", "conf", "vim",
+    },
     opts = {
-      filetypes = { "*" },
+      filetypes = {
+        "css", "scss", "sass", "less",
+        "html", "vue",
+        "javascript", "javascriptreact", "typescript", "typescriptreact",
+        "lua", "json", "jsonc", "yaml", "toml", "conf", "vim",
+      },
     },
     config = function(_, opts)
       require("colorizer").setup(opts)

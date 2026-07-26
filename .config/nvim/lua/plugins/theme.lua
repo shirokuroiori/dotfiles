@@ -11,11 +11,6 @@ return {
         -- glow_strength = 0.2,
       })
       vim.cmd.colorscheme('voltwave')
-      require('lualine').setup({
-        options = {
-          theme = require('voltwave.extras.lualine').get(),
-        },
-      })
     end,
   },
 }

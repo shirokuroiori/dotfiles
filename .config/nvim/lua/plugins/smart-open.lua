@@ -1,6 +1,7 @@
 return {
   "danielfalk/smart-open.nvim",
   branch = "0.2.x",
+  lazy = true, -- telescope.lua の dependencies から必要時にのみ読み込む
   config = function()
     require("telescope").load_extension("smart_open")
   end,

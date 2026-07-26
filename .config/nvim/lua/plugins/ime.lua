@@ -2,6 +2,7 @@ return {
   -- $ brew tap daipeihust/tap && brew install im-select
   -- im-select
   "keaising/im-select.nvim",
+  event = "VeryLazy",
   config = function()
     require("im_select").setup({
       default_im_select = "com.apple.keylayout.US",

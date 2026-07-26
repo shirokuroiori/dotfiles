@@ -2,11 +2,13 @@ return {
   -- mason
   {
     "williamboman/mason.nvim",
+    cmd = { "Mason", "MasonInstall", "MasonUpdate", "MasonUninstall", "MasonLog" },
     config = true,
   },
   {
     "williamboman/mason-lspconfig.nvim",
-    dependencies = { "mason.nvim", "neovim/nvim-lspconfig" },
+    event = { "BufReadPre", "BufNewFile" },
+    dependencies = { "mason.nvim", "neovim/nvim-lspconfig", "hrsh7th/cmp-nvim-lsp" },
     config = function()
       require("mason-lspconfig").setup({
         ensure_installed = {

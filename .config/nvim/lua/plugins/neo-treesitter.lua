@@ -1,12 +1,9 @@
 return {
   {
-    "nvim-treesitter/nvim-treesitter-textobjects",
-    dependencies = { "nvim-treesitter/nvim-treesitter" },
-  },
-  {
     "nvim-treesitter/nvim-treesitter",
     build = ":TSUpdate",
     event = { "BufReadPost", "BufNewFile" },
+    dependencies = { "nvim-treesitter/nvim-treesitter-textobjects" },
     config = function()
       require("nvim-treesitter.configs").setup({
         ensure_installed = { "python", "lua", "vim", "query", "javascript", "typescript", "vue", "tsx", "prisma", "regex", "rust" },
@@ -17,8 +14,16 @@ return {
         highlight = {
           enable = true,
           additional_vim_regex_highlighting = false,
+          disable = function(_, buf)
+            return vim.b[buf].bigfile == true
+          end,
         },
-        indent = { enable = true },
+        indent = {
+          enable = true,
+          disable = function(_, buf)
+            return vim.b[buf].bigfile == true
+          end,
+        },
         incremental_selection = {
           enable = true,
           keymaps = {

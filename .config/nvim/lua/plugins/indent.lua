@@ -22,6 +22,9 @@ return {
       ---@param bufnr integer
       ---@return rainbow_delimiters.strategy | nil
       local function safe_strategy(bufnr)
+        if vim.b[bufnr].bigfile then
+          return nil
+        end
         local ok, parser = pcall(vim.treesitter.get_parser, bufnr)
         if not ok or not parser then
           return nil

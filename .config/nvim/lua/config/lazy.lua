@@ -32,5 +32,20 @@ require("lazy").setup({
   -- install = { colorscheme = { "tokyonight-storm" } },
   -- automatically check for plugin updates
   -- checker = { enabled = true },
+  performance = {
+    rtp = {
+      -- matchit/matchparen（挙動が変わるため維持）、rplugin（tailwind-tools が
+      -- remote plugin host 経由で使用しているため維持）は意図的に除外
+      disabled_plugins = {
+        "gzip",
+        "netrwPlugin",
+        "tarPlugin",
+        "tohtml",
+        "tutor",
+        "zipPlugin",
+        "spellfile",
+      },
+    },
+  },
 })
 

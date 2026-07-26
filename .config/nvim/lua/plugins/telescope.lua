@@ -68,7 +68,7 @@ end
 return {
   "nvim-telescope/telescope.nvim",
   version = "0.1.x",
-  dependencies = { "nvim-lua/plenary.nvim" },
+  dependencies = { "nvim-lua/plenary.nvim", "danielfalk/smart-open.nvim" },
   opts = {
     defaults = {
       path_display = { "smart" },
@@ -92,7 +92,7 @@ return {
     },
   },
   keys = {
-    { "<leader>ff", "<cmd>Telescope find_files<CR>",  desc = "Find files" },
+    { "<leader>ff", function() require("telescope").extensions.smart_open.smart_open() end, desc = "Find files (smart)" },
     { "<leader>fp", find_files_by_glob,               desc = "Find files by glob pattern" },
     { "<leader>fg", live_grep_with_toggles,           desc = "Live grep" },
     { "<leader>fG", live_grep_by_glob,                desc = "Live grep with file glob" },

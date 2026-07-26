@@ -11,4 +11,5 @@ if not is_vscode and not is_cursor then
 end
 
 require("config.options")
+require("config.bigfile")
 require("config.keymaps")
