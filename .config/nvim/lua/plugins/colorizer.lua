@@ -1,12 +1,5 @@
 return {
   {
-    "roobert/tailwindcss-colorizer-cmp.nvim",
-    ft = { "css", "scss", "sass", "less", "html", "vue", "javascript", "javascriptreact", "typescript", "typescriptreact" },
-    opts = {
-      color_square_width = 6,
-    }
-  },
-  {
     "luckasRanarison/tailwind-tools.nvim",
     name = "tailwind-tools",
     ft = { "css", "scss", "sass", "less", "html", "vue", "javascript", "javascriptreact", "typescript", "typescriptreact" },
@@ -15,7 +8,7 @@ return {
       "nvim-treesitter/nvim-treesitter",
       "nvim-telescope/telescope.nvim", -- optional
       "neovim/nvim-lspconfig",
-      "hrsh7th/cmp-nvim-lsp", -- capabilities 用（vim.lsp.config と揃える）
+      "saghen/blink.cmp", -- capabilities 用（vim.lsp.config と揃える）
     },
     opts = {
       -- lspconfig.tailwindcss.setup は非推奨; vim.lsp.config で登録する（下の config）
@@ -41,9 +34,9 @@ return {
       )
 
       local caps = vim.lsp.protocol.make_client_capabilities()
-      local ok_cmp, cmp_lsp = pcall(require, "cmp_nvim_lsp")
-      if ok_cmp then
-        caps = cmp_lsp.default_capabilities()
+      local ok_blink, blink_cmp = pcall(require, "blink.cmp")
+      if ok_blink then
+        caps = blink_cmp.get_lsp_capabilities()
       end
       caps.textDocument = caps.textDocument or {}
       caps.textDocument.colorProvider = { dynamicRegistration = true }

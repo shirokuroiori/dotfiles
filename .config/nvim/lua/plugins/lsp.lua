@@ -8,7 +8,7 @@ return {
   {
     "williamboman/mason-lspconfig.nvim",
     event = { "BufReadPre", "BufNewFile" },
-    dependencies = { "mason.nvim", "neovim/nvim-lspconfig", "hrsh7th/cmp-nvim-lsp" },
+    dependencies = { "mason.nvim", "neovim/nvim-lspconfig", "saghen/blink.cmp" },
     config = function()
       require("mason-lspconfig").setup({
         ensure_installed = {
@@ -19,7 +19,7 @@ return {
           "tailwindcss",
         },
       })
-      local capabilities = require("cmp_nvim_lsp").default_capabilities()
+      local capabilities = require("blink.cmp").get_lsp_capabilities()
       vim.lsp.config("*", {
         capabilities = capabilities,
       })
