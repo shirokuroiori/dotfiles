@@ -12,7 +12,7 @@ local options = {
   cursorlineopt = "number",
   signcolumn = "yes",
   --  clipboard = "unnamedplus",
-  -- sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions",
+  sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions",
 }
 
 for k, v in pairs(options) do
