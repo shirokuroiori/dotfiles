@@ -21,9 +21,20 @@ config.initial_cols = 150
 config.initial_rows = 50
 
 
--- Metal バックエンドを使う
-config.front_end = 'WebGpu'
-config.webgpu_power_preference = 'HighPerformance'
+-- WebGpu はグリフ合成のガンマ補正が正しくなく、文字が太く・甘く描かれる。
+-- 未解決の既知バグ: https://github.com/wezterm/wezterm/issues/3032
+--   "WebGpu causes my fonts to render ... thick/bold. Setting OpenGL ... normal/thin again"
+-- 縦ステムの実測（不透明・Bizin Gothic 16・nvim 全画面）:
+--            実効幅    ピーク  中心画素の占有率  検出本数
+--   Ghostty  1.732px   61.6    61.2%            464
+--   WebGpu   1.854px   59.4    57.7%            311   ← Ghostty比 +7.0%
+--   OpenGL   1.774px   58.2    59.4%            467   ← Ghostty比 +2.4%
+-- OpenGL の方が Ghostty に近く、差の約2/3が消える。明示指定して既定値の変更に左右されないようにする。
+-- ※ 絶対値は実行ごとに約2%ぶれる（nvim の表示内容で対象文字が変わるため）。
+--   信頼できるのは同一実行内での比較のみ。上表は WebGpu と OpenGL を同一実行で測ったもの。
+config.front_end = 'OpenGL'
+-- webgpu_power_preference は WebGpu 専用。OpenGL では無意味なので無効化。
+-- config.webgpu_power_preference = 'HighPerformance'
 
 -- フォントのラスタライズ。WezTerm は macOS でも CoreText ではなく常に FreeType を使うため、
 -- 既定のままだと Ghostty / ネイティブアプリ（CoreText）より字形が硬くなる。
@@ -32,24 +43,29 @@ config.webgpu_power_preference = 'HighPerformance'
 -- Light : 縦方向のみヒンティング。横のステム位置を歪めないので CoreText に一番近い
 -- Normal(render_target) : グレースケールAA。HorizontalLcd はサブピクセルRGBで、
 --                          暗背景＋高彩度の文字だと色フリンジが出てざらつく
--- front_end = WebGpu ではサブピクセルAA（HorizontalLcd）を透過ウィンドウに正しく
--- 合成できず色フリンジが悪化する（Dual Source Blending 未対応。要 OpenGL:
--- https://github.com/wezterm/wezterm/issues/932, /issues/3625）。
--- window_background_opacity < 1 で運用する限り Normal（グレースケール）が無難。
+-- 以前 HorizontalLcd で色フリンジが出たのは front_end = WebGpu だったため
+-- （透過ウィンドウ上のサブピクセルAA には Dual Source Blending が要り、OpenGL のみ対応:
+--  https://github.com/wezterm/wezterm/issues/932, /issues/3625）。
+-- OpenGL でも実測すると HorizontalLcd は太くなるので Normal のまま。同一実行内の比較:
+--   OpenGL + Normal         1.815px  中心占有 58.4%
+--   OpenGL + HorizontalLcd  1.889px  中心占有 56.3%  ← 悪化
 config.freetype_load_target = 'Light'
 config.freetype_render_target = 'Normal'
--- interpreter_version = 35 は旧TrueTypeインタプリタで縦横ともにグリッドへ強制スナップする。
--- 1x だと文字ごとに線幅がばらつくので既定(40 = サブピクセルヒンティング)に任せる。
+-- 【実測メモ】この2つはこのフォントでは効果がない。スクリーンショットの画素差(255階調)で:
+--   freetype_load_flags   MONOCHROME vs DEFAULT = 0.013  → 無効。AA無効すら効かない
+--   interpreter_version   35 vs 40              = 0.014  → 無効
+--   freetype_load_target  Light vs Normal       = 0.46   → 0.18%。測れるが視認不能
+-- 触る意味があるのは load_target だけで、それも実質変わらない。
 -- config.freetype_interpreter_version = 35
+-- config.freetype_load_flags = 'NO_HINTING'
 --
--- Bizin Gothic は ttfautohint の "-a qsq" 付きでビルドされており、先頭の q が
--- 「グレースケール描画時にステム幅を整数ピクセルへ量子化する」指定になっている。
--- NO_HINTING で切ると量子化を回避でき線が細くなる。既定では有効にしていないだけで、
--- 描画位置への悪影響は実測では確認できなかった（下記）ので、細くしたいなら有効化してよい。
--- ※ WezTerm には Ghostty の font-thicken / alpha-blending に相当する調整はなく、
---   太さを触れるのは書体・サイズ・この3つの freetype_* だけ。
-config.freetype_load_flags = 'NO_HINTING'
--- config.allow_square_glyphs_to_overflow_width = 'Always'
+-- 【縦ステムの実測】不透明・同フォント・同サイズで比較(nvim 全画面, 300本以上):
+--            実効幅    ピーク   中心画素の占有率
+--   Ghostty  1.732px   61.6     61.2%
+--   WezTerm  1.847px   59.2     57.8%
+-- WezTerm の縦線は 7% 太く、やや甘い。設定では動かせず、FreeType と CoreText の差。
+-- ※ 横棒(ハイフン)で測ると縦方向のヒンティングしか見えないため差が出ない。
+--   太さの体感を確かめたいときは必ず縦ステムで測ること。
 
 -- font size
 -- Bizin Gothic の送り幅は em のちょうど 0.5 倍なので、セル幅 = font_size / 2。
@@ -63,27 +79,56 @@ config.line_height = 1.0
 config.font = wezterm.font_with_fallback({
   -- このファミリは Regular / Bold の2ウェイトのみ。weight=500 は Regular に丸められて
   -- 効かないので指定しない。1x で線を太らせたいなら weight = "Bold" にする。
-  { family = "Bizin Gothic Discord NF"},
-  "Apple Color Emoji",
+  { family = "Bizin Gothic Discord NF" },
+  { family = "Apple Color Emoji", scale = 2.0 },
 })
-config.use_cap_height_to_scale_fallback_fonts = false
-config.max_fps = 120
--- ✅✨🍣♻️ℹ️
+-- 💡
+-- ℹ️ ♻️ ⚠️ が ✅ より小さく見えるのは、これらが「基底文字 + U+FE0F(VS16)」の2コードポイント
+-- 構成で、既定の unicode_version = 9 では VS16 付き絵文字列が 1セル幅と判定されるため。
+-- 絵文字グリフが半分の幅に押し込まれていた。14 にすると 2セル幅になり ✅ と揃う。
+--   ℹ️(U+2139 U+FE0F) / ♻️(U+267B U+FE0F) / ⚠️(U+26A0 U+FE0F) : cells 1 -> 2
+--   ✅(U+2705) は単体で East Asian Width = Wide なので元から 2セル
+-- unicode_version は端末全体の文字幅計算に効くため、罫線・ギリシャ文字・キリル文字・
+-- 記号・丸数字など46文字で 9 と 14 を実測比較したが、変化したのは上記の VS16 付き3文字のみ。
+config.unicode_version = 14
 
+-- 【実測メモ】絵文字のサイズ調整は事実上「2択」しかない。
+-- Apple Color Emoji はビットマップフォントで固定ストライクしか持たない
+-- （[26,34,42,52,63,68,84,126,210]。wezterm ls-fonts が列挙する）。
+-- そのため per-font の scale は非単調で、有効なのは 1.6 と 2.0 の2点だけ:
+--   scale=0.5 / 0.8 / 1.0 / 1.2 / 1.4 / 1.5 / 1.55 -> 12.19px
+--   scale=1.6                                      -> 18.72px
+--   scale=1.7 / 1.8                                -> 12.19px  ← 1.6 より小さい
+--   scale=2.0                                      -> 18.58px
+--   scale=2.2                                      -> 12.19px
+-- 中間の値は取れないので「気持ちだけ小さく」はできない。大きい方に戻すなら 2 にする。
+--   （wezterm ls-fonts --text '✅' の x_adv で確認可）
+--
+-- allow_square_glyphs_to_overflow_width は効果なし（'Never' を試したが見た目が変わらない）。
+-- 絵文字は元から 2セル内に収まっており、はみ出していないため。
+-- ls-fonts の x_adv は Never / WhenFollowedBySpace で同じ 18.58 を報告し、
+-- cell_width の影響も現れない。つまり x_adv は描画幅ではなくフォント側のメトリック。
+-- この系統の設定は ls-fonts では検証できないので、必ず目視で確認すること。
+
+config.max_fps = 120
+-- 逆にセル側を広げる方向（8px -> 9px）。絵文字は相対的に小さく見えるが、
+-- 全カラムが 12.5% 広がって initial_cols=150 だと窓幅 1200px -> 1350px になる。
+-- config.cell_width = 1.125
+-- ✅✨🍣♻️ℹ️♻️♻️♻️♻️♻️♻️
+--       aaaaaaaaaaaaaaa♻️aaa
 -- color schema
 config.color_scheme = "voltwave"
-
 config.window_background_opacity = 0.75
--- config.window_background_opacity = 1
 
 -- macOS の背景ブラーは「文字のコントラストを削る」最大の要因。実測（ハイフンのピーク強度）:
 --   不透明                 81.8  (Ghostty 不透明 = 80.8 とほぼ同じ)
 --   opacity 0.75 / blur 0  89.2  ← 透過のまま最もシャープ
 --   opacity 0.75 / blur 25 57.5  ← 30% 失う
 -- ブラーは二値的で、5 以上はどの値でも 57.5 で変わらない（半径を下げても無意味）。
--- Ghostty がシャープに見えていたのは不透明で動いていたため。書体やラスタライザの差ではない。
+-- Ghostty がシャープに見えていた主因はこれ（不透明で動いていたため）。
+-- ただしブラーを切っても縦ステムに 7% の差は残る（上記）。そちらは設定では消せない。
 -- 「すりガラス」感が欲しくなったら 20〜25 に戻す。
-config.macos_window_background_blur = 0
+config.macos_window_background_blur = 5
 
 -- 背景画像（未指定だと反映されない）。
 -- wezterm.config_dir は「設定ファイルを置いたディレクトリ」（例: ~/.config/wezterm）。
@@ -203,6 +248,7 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
     git     = '󰊢 ',
     lazygit = '󰊢 ',
     claude  = '󱚤 ',
+    copilot = ' ',
   }
   local icon = icons[process] or '  '
 
