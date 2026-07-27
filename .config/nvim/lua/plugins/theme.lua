@@ -8,7 +8,11 @@ return {
         bolt = true,
         transparent = true,
         glow = false,
-        -- glow_strength = 0.2,
+        italic = {
+          comments   = false,
+          functions  = false,
+          variables  = false,
+        },
       })
       vim.cmd.colorscheme('voltwave')
     end,
