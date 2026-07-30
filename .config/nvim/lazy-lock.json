@@ -45,7 +45,7 @@
   "telescope-fzy-native.nvim": { "branch": "master", "commit": "282f069504515eec762ab6d6c89903377252bf5b" },
   "telescope.nvim": { "branch": "master", "commit": "84b9ba066d1860f7a586ce9cd732fd6c4f77d1d9" },
   "vim-illuminate": { "branch": "master", "commit": "91313e598ca62e110bc71535c49069b66b9883c9" },
-  "voltwave.nvim": { "branch": "main", "commit": "06f5a7522bd7c8cce8ce7cc61f8272b841adbc7c" },
+  "voltwave.nvim": { "branch": "main", "commit": "11e9be9aa8da3d24c01b9c28c791c0adb1b932af" },
   "which-key.nvim": { "branch": "main", "commit": "3aab2147e74890957785941f0c1ad87d0a44c15a" },
   "zen-mode.nvim": { "branch": "main", "commit": "8564ce6d29ec7554eb9df578efa882d33b3c23a7" }
 }

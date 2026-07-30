@@ -242,6 +242,7 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
   end
 
   local process = pane.foreground_process_name:match('[^/]+$') or ''
+  local pane_title = (pane.title or ''):lower()
   local icons = {
     nvim    = ' ',
     vim     = ' ',
@@ -251,9 +252,13 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
     git     = '󰊢 ',
     lazygit = '󰊢 ',
     claude  = '󱚤 ',
-    copilot = ' ',
+    node    = ' ',
   }
+
   local icon = icons[process] or '  '
+  if process == 'node' and pane_title:find('copilot', 1, true) then
+    icon = '  '
+  end
 
   local title = string.format(' %d. %s%s ', tab.tab_index + 1, icon, cwd)
 
