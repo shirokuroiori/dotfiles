@@ -60,5 +60,24 @@ return {
         char_brightness = 2.0
       }
     }
-  }
+  },
+  {
+    "pwntester/octo.nvim",
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "nvim-telescope/telescope.nvim",
+      "nvim-tree/nvim-web-devicons",
+    },
+    cmd = "Octo",
+    keys = {
+      { "<leader>ol", "<cmd>Octo pr list<cr>", desc = "PR List" },
+      { "<leader>os", "<cmd>Octo pr search<cr>", desc = "PR Search" },
+      { "<leader>oo", "<cmd>Octo pr checkout<cr>", desc = "PR Checkout" },
+      { "<leader>oc", "<cmd>Octo comment add<cr>", desc = "Add Comment" },
+      { "<leader>orc", "<cmd>Octo review comments<cr>", desc = "Review Comments" },
+      { "<leader>orv", "<cmd>Octo review start<cr>", desc = "Start Review" },
+      { "<leader>orx", "<cmd>Octo review submit<cr>", desc = "Submit Review" },
+    },
+    opts = {},
+  },
 }

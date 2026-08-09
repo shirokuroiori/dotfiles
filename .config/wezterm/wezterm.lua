@@ -262,12 +262,52 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
 
   local title = string.format(' %d. %s%s ', tab.tab_index + 1, icon, cwd)
 
-  if tab.is_active then
-    return {
-      { Text = title },
+  -- Claude Codeがhooks(~/.claude/hooks/wezterm-notify.sh)経由でOSC 1337 SetUserVarに
+  -- 書き込む claude_status ("waiting"|"working"|"done") を見て文字色を変える。
+  -- waiting = 承認/入力待ち、working = 応答生成中、done = 応答完了、未設定 = 通常表示。
+  -- アニメーション(スピナー等)は再描画をタイマーで強制し続ける必要がありアイドル時も
+  -- コストが乗るため使わず、色分け＋working時のみ絵文字追加で状態を示す。
+  if process == 'claude' and pane.user_vars then
+    local status = pane.user_vars.claude_status
+    local claude_status_colors = {
+      waiting = '#FE4450', -- voltwave ansi red
+      working = '#FFCC00', -- voltwave ansi yellow
+      done    = '#50fa7b', -- voltwave ansi green
     }
+    if status == 'working' then
+      title = string.format(' %d. %s🤔 %s ', tab.tab_index + 1, icon, cwd)
+    end
+    local color = claude_status_colors[status]
+    if color then
+      return {
+        { Foreground = { Color = color } },
+        { Text = title },
+      }
+    end
   end
+
   return { { Text = title } }
+end)
+
+-- claude_status に応じたベル通知。wezterm-notify.sh が waiting/done のときだけ
+-- BEL を送ってくるので、そのままトーストとして出す（working では鳴らさない）。
+config.audible_bell = 'Disabled'
+
+wezterm.on('bell', function(window, pane)
+  local claude_status_messages = {
+    waiting = '承認/入力待ちです',
+    done    = '応答が完了しました',
+  }
+  local status = pane:get_user_vars().claude_status
+  local message = claude_status_messages[status]
+  if not message then
+    return
+  end
+
+  local cwd_uri = pane:get_current_working_dir()
+  local cwd = cwd_uri and (cwd_uri.file_path:match('[^/]+/?$') or '') or ''
+
+  window:toast_notification('Claude Code: ' .. cwd, message, nil, 5000)
 end)
 
 -- Finally, return the configuration to wezterm:

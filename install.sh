@@ -9,6 +9,7 @@ mkdir -p "$backup_dir"
 mkdir -p "$backup_dir/lazygit"
 [ -e "$HOME/Library/Application Support/lazygit/config.yml" ] && { mv "$HOME/Library/Application Support/lazygit/config.yml" "$backup_dir/lazygit/config.yml.bak" || exit 1; }
 [ -e "$HOME/.claude/commands/shortcuts.md" ] && { mv "$HOME/.claude/commands/shortcuts.md" "$backup_dir/shortcuts.md.bak" || exit 1; }
+[ -e "$HOME/.claude/hooks/wezterm-notify.sh" ] && { mv "$HOME/.claude/hooks/wezterm-notify.sh" "$backup_dir/wezterm-notify.sh.bak" || exit 1; }
 
 rm -rf "$HOME/.config/nvim" && ln -s "$HOME/dotfiles/.config/nvim" "$HOME/.config/nvim"
 rm -rf "$HOME/.config/wezterm" && ln -s "$HOME/dotfiles/.config/wezterm" "$HOME/.config/wezterm"
@@ -17,3 +18,5 @@ mkdir -p "$HOME/Library/Application Support/lazygit"
 rm -rf "$HOME/Library/Application Support/lazygit/config.yml" && ln -s "$HOME/dotfiles/.config/lazygit/config.yml" "$HOME/Library/Application Support/lazygit/config.yml"
 mkdir -p "$HOME/.claude/commands"
 rm -rf "$HOME/.claude/commands/shortcuts.md" && ln -s "$HOME/dotfiles/.claude/commands/shortcuts.md" "$HOME/.claude/commands/shortcuts.md"
+mkdir -p "$HOME/.claude/hooks"
+rm -rf "$HOME/.claude/hooks/wezterm-notify.sh" && ln -s "$HOME/dotfiles/.claude/hooks/wezterm-notify.sh" "$HOME/.claude/hooks/wezterm-notify.sh"
