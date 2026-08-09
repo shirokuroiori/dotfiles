@@ -262,44 +262,74 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
 
   local title = string.format(' %d. %s%s ', tab.tab_index + 1, icon, cwd)
 
-  -- Claude Codeがhooks(~/.claude/hooks/wezterm-notify.sh)経由でOSC 1337 SetUserVarに
-  -- 書き込む claude_status ("waiting"|"working"|"done") を見て文字色を変える。
-  -- waiting = 承認/入力待ち、working = 応答生成中、done = 応答完了、未設定 = 通常表示。
-  -- アニメーション(スピナー等)は再描画をタイマーで強制し続ける必要がありアイドル時も
-  -- コストが乗るため使わず、色分け＋working時のみ絵文字追加で状態を示す。
-  if process == 'claude' and pane.user_vars then
-    local status = pane.user_vars.claude_status
-    local claude_status_colors = {
-      waiting = '#FE4450', -- voltwave ansi red
-      working = '#FFCC00', -- voltwave ansi yellow
-      done    = '#50fa7b', -- voltwave ansi green
-    }
-    if status == 'working' then
-      title = string.format(' %d. %s🤔 %s ', tab.tab_index + 1, icon, cwd)
-    end
-    local color = claude_status_colors[status]
-    if color then
+  -- Claude Code / GitHub Copilot CLI の状態表示。
+  -- working（思考中）は hooks を使わず、エージェント自身がタイトルに出す
+  -- 点字スピナー(U+2800-U+28FF、UTF-8で E2 A0-A3 xx)の有無で判定する。
+  -- Escでの中断はhookが一切発火しない（Stop/agentStopは正常終了時のみ）ため、
+  -- hookのuser_var頼りだと"working"のまま張り付く。スピナーの有無を毎描画
+  -- 見るこの方式なら、中断で実際にスピナーが消えた瞬間に追従できる。
+  --
+  -- waiting/doneはhooks経由でOSC 1337 SetUserVarに書き込まれた状態を見る
+  -- （タイトルに現れない状態＝許可待ち・応答完了はhookに頼るしかない）。
+  -- Copilot CLIは2026-08時点でNotification相当のhookが無いため waiting(赤)は
+  -- 検知不能。またCopilot CLIのプロセス名・タイトルスピナーの実際の文字は
+  -- 未検証（ドキュメントベースの実装）。実機で違えばここを調整する。
+  local user_var_key, status_colors
+  if process == 'claude' then
+    user_var_key = 'claude_status'
+    status_colors = { waiting = '#FE4450', done = '#50fa7b' } -- voltwave red/green
+  elseif process == 'copilot' or (process == 'node' and pane_title:find('copilot', 1, true)) then
+    user_var_key = 'copilot_status'
+    status_colors = { done = '#50fa7b' } -- voltwave green（waitingは未対応）
+  end
+
+  if user_var_key then
+    local raw_title = pane.title or ''
+    local b1, b2 = raw_title:byte(1, 2)
+    local is_thinking = b1 == 0xE2 and b2 and b2 >= 0xA0 and b2 <= 0xA3
+
+    if is_thinking then
       return {
-        { Foreground = { Color = color } },
-        { Text = title },
+        { Foreground = { Color = '#FFCC00' } }, -- voltwave ansi yellow
+        { Text = string.format(' %d. %s🤔 %s ', tab.tab_index + 1, icon, cwd) },
       }
+    end
+
+    if pane.user_vars then
+      local color = status_colors[pane.user_vars[user_var_key]]
+      if color then
+        return {
+          { Foreground = { Color = color } },
+          { Text = title },
+        }
+      end
     end
   end
 
   return { { Text = title } }
 end)
 
--- claude_status に応じたベル通知。wezterm-notify.sh が waiting/done のときだけ
--- BEL を送ってくるので、そのままトーストとして出す（working では鳴らさない）。
+-- claude_status/copilot_status に応じたベル通知。wezterm-notify.sh が
+-- waiting/done のときだけ BEL を送ってくるので、そのままトーストとして出す
+-- （working では鳴らさない）。
 config.audible_bell = 'Disabled'
 
 wezterm.on('bell', function(window, pane)
-  local claude_status_messages = {
+  local status_messages = {
     waiting = '承認/入力待ちです',
     done    = '応答が完了しました',
   }
-  local status = pane:get_user_vars().claude_status
-  local message = claude_status_messages[status]
+  local user_vars = pane:get_user_vars()
+  local label, status
+  if user_vars.claude_status then
+    label, status = 'Claude Code', user_vars.claude_status
+  elseif user_vars.copilot_status then
+    label, status = 'Copilot CLI', user_vars.copilot_status
+  else
+    return
+  end
+
+  local message = status_messages[status]
   if not message then
     return
   end
@@ -307,7 +337,7 @@ wezterm.on('bell', function(window, pane)
   local cwd_uri = pane:get_current_working_dir()
   local cwd = cwd_uri and (cwd_uri.file_path:match('[^/]+/?$') or '') or ''
 
-  window:toast_notification('Claude Code: ' .. cwd, message, nil, 5000)
+  window:toast_notification(label .. ': ' .. cwd, message, nil, 5000)
 end)
 
 -- Finally, return the configuration to wezterm:

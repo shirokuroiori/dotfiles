@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/wezterm-notify.sh done",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}
