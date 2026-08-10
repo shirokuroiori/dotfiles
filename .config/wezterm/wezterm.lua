@@ -230,6 +230,47 @@ smart_splits.apply_to_config(config, {
 })
 
 
+-- タブ配色。voltwave.toml の [colors.tab_bar] active_tab/inactive_tab と同じ値。
+local TAB_ACTIVE_BG   = '#2A1340'
+local TAB_INACTIVE_BG = '#241B2F'
+local TAB_ACTIVE_FG   = '#72F1B8'
+local TAB_INACTIVE_FG = '#6B7A8F'
+local TAB_ACCENT      = '#38daff' -- voltwave ansi cyan
+
+-- ステータス色を付けたタブでも「選択中かどうか」が分かるように。
+-- 背景差だけでは彩度の強いステータス色に負けて見分けづらく、retro tab bar
+-- では Underline 属性も効かなかったため、選択中タブの左端に nf-fa-hand_o_right
+-- を「枠線」代わりに立てて明示する。通常タブにも共通で適用する。
+local function hex_to_rgb(hex)
+  return tonumber(hex:sub(2, 3), 16), tonumber(hex:sub(4, 5), 16), tonumber(hex:sub(6, 7), 16)
+end
+
+local function blend(hex1, hex2, t)
+  local r1, g1, b1 = hex_to_rgb(hex1)
+  local r2, g2, b2 = hex_to_rgb(hex2)
+  return string.format(
+    '#%02x%02x%02x',
+    math.floor(r1 + (r2 - r1) * t + 0.5),
+    math.floor(g1 + (g2 - g1) * t + 0.5),
+    math.floor(b1 + (b2 - b1) * t + 0.5)
+  )
+end
+
+-- fgを省略すると通常タブと同じ配色（選択中=TAB_ACTIVE_FG／非選択=TAB_INACTIVE_FG）になる。
+local function tab_elements(tab_is_active, text, fg)
+  local bg = tab_is_active and TAB_ACTIVE_BG or TAB_INACTIVE_BG
+  fg = fg or (tab_is_active and TAB_ACTIVE_FG or TAB_INACTIVE_FG)
+  local elements = { { Background = { Color = bg } } }
+  if tab_is_active then
+    table.insert(elements, { Foreground = { Color = TAB_ACCENT } })
+    table.insert(elements, { Text = ' \u{f0a4}' }) -- nf-fa-hand_o_right
+    table.insert(elements, { Background = { Color = bg } })
+  end
+  table.insert(elements, { Foreground = { Color = fg } })
+  table.insert(elements, { Text = text })
+  return elements
+end
+
 -- タブタイトル: アイコン + 末尾ディレクトリ名
 wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_width)
   local pane = tab.active_pane
@@ -289,24 +330,22 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
     local is_thinking = b1 == 0xE2 and b2 and b2 >= 0xA0 and b2 <= 0xA3
 
     if is_thinking then
-      return {
-        { Foreground = { Color = '#FFCC00' } }, -- voltwave ansi yellow
-        { Text = string.format(' %d. %s🤔 %s ', tab.tab_index + 1, icon, cwd) },
-      }
+      local working_title = string.format(' %d. %s🤔 %s ', tab.tab_index + 1, icon, cwd)
+      return tab_elements(tab.is_active, working_title, '#FFCC00') -- voltwave ansi yellow
     end
 
     if pane.user_vars then
-      local color = status_colors[pane.user_vars[user_var_key]]
-      if color then
-        return {
-          { Foreground = { Color = color } },
-          { Text = title },
-        }
+      local status_color = status_colors[pane.user_vars[user_var_key]]
+      if status_color then
+        -- 非選択タブは彩度の強いステータス色のままだと目立ちすぎるので、
+        -- 通常タブの非選択色に寄せて減彩する。
+        local fg = tab.is_active and status_color or blend(status_color, TAB_INACTIVE_FG, 0.6)
+        return tab_elements(tab.is_active, title, fg)
       end
     end
   end
 
-  return { { Text = title } }
+  return tab_elements(tab.is_active, title)
 end)
 
 -- claude_status/copilot_status に応じたベル通知。wezterm-notify.sh が
