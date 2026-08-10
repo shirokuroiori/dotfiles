@@ -241,21 +241,7 @@ local TAB_ACCENT      = '#38daff' -- voltwave ansi cyan
 -- 背景差だけでは彩度の強いステータス色に負けて見分けづらく、retro tab bar
 -- では Underline 属性も効かなかったため、選択中タブの左端に nf-fa-hand_o_right
 -- を「枠線」代わりに立てて明示する。通常タブにも共通で適用する。
-local function hex_to_rgb(hex)
-  return tonumber(hex:sub(2, 3), 16), tonumber(hex:sub(4, 5), 16), tonumber(hex:sub(6, 7), 16)
-end
-
-local function blend(hex1, hex2, t)
-  local r1, g1, b1 = hex_to_rgb(hex1)
-  local r2, g2, b2 = hex_to_rgb(hex2)
-  return string.format(
-    '#%02x%02x%02x',
-    math.floor(r1 + (r2 - r1) * t + 0.5),
-    math.floor(g1 + (g2 - g1) * t + 0.5),
-    math.floor(b1 + (b2 - b1) * t + 0.5)
-  )
-end
-
+--
 -- fgを省略すると通常タブと同じ配色（選択中=TAB_ACTIVE_FG／非選択=TAB_INACTIVE_FG）になる。
 local function tab_elements(tab_is_active, text, fg)
   local bg = tab_is_active and TAB_ACTIVE_BG or TAB_INACTIVE_BG
@@ -337,10 +323,9 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
     if pane.user_vars then
       local status_color = status_colors[pane.user_vars[user_var_key]]
       if status_color then
-        -- 非選択タブは彩度の強いステータス色のままだと目立ちすぎるので、
-        -- 通常タブの非選択色に寄せて減彩する。
-        local fg = tab.is_active and status_color or blend(status_color, TAB_INACTIVE_FG, 0.6)
-        return tab_elements(tab.is_active, title, fg)
+        -- 選択中タブは指マーク(nf-fa-hand_o_right)で区別できるので、
+        -- 非選択タブの減彩はもう不要。両方フル彩度のステータス色でよい。
+        return tab_elements(tab.is_active, title, status_color)
       end
     end
   end
