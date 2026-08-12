@@ -111,8 +111,6 @@ config.unicode_version = 14
 -- この系統の設定は ls-fonts では検証できないので、必ず目視で確認すること。
 
 config.max_fps = 120
--- stale status失効をタブ描画へ反映するため、定期的にUI更新を走らせる
-config.status_update_interval = 1000
 -- 逆にセル側を広げる方向（8px -> 9px）。絵文字は相対的に小さく見えるが、
 -- 全カラムが 12.5% 広がって initial_cols=150 だと窓幅 1200px -> 1350px になる。
 -- config.cell_width = 1.125
@@ -351,11 +349,6 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
   end
 
   return tab_elements(tab.is_active, title)
-end)
-
--- status_update_intervalを有効化するための最小ハンドラ
-wezterm.on('update-status', function(window, pane)
-  window:set_right_status('')
 end)
 
 -- claude_status/copilot_status に応じたベル通知。wezterm-notify.sh が
