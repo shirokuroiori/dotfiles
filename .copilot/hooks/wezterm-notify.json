@@ -1,7 +1,65 @@
 {
   "version": 1,
   "hooks": {
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/wezterm-notify.sh working",
+        "timeoutSec": 5
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/wezterm-notify.sh pretool",
+        "timeoutSec": 5
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "matcher": "ask_user",
+        "bash": "~/.copilot/hooks/wezterm-notify.sh working",
+        "timeoutSec": 5
+      }
+    ],
+    "subagentStart": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/wezterm-notify.sh working",
+        "timeoutSec": 5
+      }
+    ],
+    "notification": [
+      {
+        "type": "command",
+        "matcher": "permission_prompt|elicitation_dialog",
+        "bash": "~/.copilot/hooks/wezterm-notify.sh waiting",
+        "timeoutSec": 5
+      }
+    ],
     "agentStop": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/wezterm-notify.sh done",
+        "timeoutSec": 5
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/wezterm-notify.sh done",
+        "timeoutSec": 5
+      }
+    ],
+    "errorOccurred": [
+      {
+        "type": "command",
+        "bash": "~/.copilot/hooks/wezterm-notify.sh done",
+        "timeoutSec": 5
+      }
+    ],
+    "sessionEnd": [
       {
         "type": "command",
         "bash": "~/.copilot/hooks/wezterm-notify.sh done",

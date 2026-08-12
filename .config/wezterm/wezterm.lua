@@ -111,6 +111,8 @@ config.unicode_version = 14
 -- この系統の設定は ls-fonts では検証できないので、必ず目視で確認すること。
 
 config.max_fps = 120
+-- stale status失効をタブ描画へ反映するため、定期的にUI更新を走らせる
+config.status_update_interval = 1000
 -- 逆にセル側を広げる方向（8px -> 9px）。絵文字は相対的に小さく見えるが、
 -- 全カラムが 12.5% 広がって initial_cols=150 だと窓幅 1200px -> 1350px になる。
 -- config.cell_width = 1.125
@@ -298,16 +300,17 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
   --
   -- waiting/doneはhooks経由でOSC 1337 SetUserVarに書き込まれた状態を見る
   -- （タイトルに現れない状態＝許可待ち・応答完了はhookに頼るしかない）。
-  -- Copilot CLIは2026-08時点でNotification相当のhookが無いため waiting(赤)は
-  -- 検知不能。またCopilot CLIのプロセス名・タイトルスピナーの実際の文字は
-  -- 未検証（ドキュメントベースの実装）。実機で違えばここを調整する。
+  -- Copilot CLIはuserPromptSubmitted/notification/agentStop hookで
+  -- working/waiting/doneを送る想定。notificationは permission_prompt /
+  -- elicitation_dialog を waiting とみなす。
   local user_var_key, status_colors
+  local has_copilot_status = pane.user_vars and pane.user_vars.copilot_status ~= nil
   if process == 'claude' then
     user_var_key = 'claude_status'
-    status_colors = { waiting = '#FE4450', done = '#50fa7b' } -- voltwave red/green
-  elseif process == 'copilot' or (process == 'node' and pane_title:find('copilot', 1, true)) then
+    status_colors = { working = '#FFCC00', waiting = '#FE4450', done = '#50fa7b' } -- voltwave yellow/red/green
+  elseif has_copilot_status or process == 'copilot' or process == 'copilot-cli' or (process == 'node' and pane_title:find('copilot', 1, true)) then
     user_var_key = 'copilot_status'
-    status_colors = { done = '#50fa7b' } -- voltwave green（waitingは未対応）
+    status_colors = { working = '#FFCC00', waiting = '#FE4450', done = '#50fa7b' } -- voltwave yellow/red/green
   end
 
   if user_var_key then
@@ -321,7 +324,24 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
     end
 
     if pane.user_vars then
-      local status_color = status_colors[pane.user_vars[user_var_key]]
+      local user_status = pane.user_vars[user_var_key]
+      local status_age_limit = 5
+      local status_at_raw = pane.user_vars[user_var_key .. '_at'] or ''
+      local status_at = tonumber(status_at_raw)
+      local status_is_fresh = status_at and (os.time() - status_at) <= status_age_limit
+
+      -- CopilotでEsc中断時にhookが発火せずworkingが残るケースに備えて、
+      -- user_var由来のworkingは「直近更新のみ」有効とする。
+      if user_status == 'working' and (is_thinking or status_is_fresh) then
+        local working_title = string.format(' %d. %s🤔 %s ', tab.tab_index + 1, icon, cwd)
+        return tab_elements(tab.is_active, working_title, '#FFCC00') -- voltwave ansi yellow
+      end
+      local status_color
+      if user_status == 'working' then
+        status_color = status_is_fresh and status_colors.working or nil
+      else
+        status_color = status_colors[user_status]
+      end
       if status_color then
         -- 選択中タブは指マーク(nf-fa-hand_o_right)で区別できるので、
         -- 非選択タブの減彩はもう不要。両方フル彩度のステータス色でよい。
@@ -331,6 +351,11 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
   end
 
   return tab_elements(tab.is_active, title)
+end)
+
+-- status_update_intervalを有効化するための最小ハンドラ
+wezterm.on('update-status', function(window, pane)
+  window:set_right_status('')
 end)
 
 -- claude_status/copilot_status に応じたベル通知。wezterm-notify.sh が
