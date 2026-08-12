@@ -1,32 +1,10 @@
 {
   "version": 1,
   "hooks": {
-    "userPromptSubmitted": [
-      {
-        "type": "command",
-        "bash": "~/.copilot/hooks/wezterm-notify.sh working",
-        "timeoutSec": 5
-      }
-    ],
     "preToolUse": [
       {
         "type": "command",
         "bash": "~/.copilot/hooks/wezterm-notify.sh pretool",
-        "timeoutSec": 5
-      }
-    ],
-    "postToolUse": [
-      {
-        "type": "command",
-        "matcher": "ask_user",
-        "bash": "~/.copilot/hooks/wezterm-notify.sh working",
-        "timeoutSec": 5
-      }
-    ],
-    "subagentStart": [
-      {
-        "type": "command",
-        "bash": "~/.copilot/hooks/wezterm-notify.sh working",
         "timeoutSec": 5
       }
     ],
