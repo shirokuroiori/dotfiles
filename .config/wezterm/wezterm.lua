@@ -257,6 +257,23 @@ local function tab_elements(tab_is_active, text, fg)
   return elements
 end
 
+-- Copilot CLIはtitleにthinkingスピナーを出さない代わりに、画面最終行に
+-- "◎ Working ..." というステータス行を描画する。get_lines_as_text(1)は
+-- 最下1行だけを返す（実測確認済み）ので、毎描画呼んでもコストは軽い。
+-- 許可待ち・中断・完了はどれもこの行が消えるだけで区別できないため、
+-- waiting/doneは引き続きhookに任せ、working（今動いているか）だけをこれで見る。
+local function copilot_is_working(pane_id)
+  local ok, mp = pcall(wezterm.mux.get_pane, pane_id)
+  if not ok or not mp then
+    return false
+  end
+  local ok2, last_line = pcall(function() return mp:get_lines_as_text(1) end)
+  if not ok2 or not last_line then
+    return false
+  end
+  return last_line:find('Working', 1, true) ~= nil
+end
+
 -- タブタイトル: アイコン + 末尾ディレクトリ名
 wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_width)
   local pane = tab.active_pane
@@ -290,30 +307,30 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
   local title = string.format(' %d. %s%s ', tab.tab_index + 1, icon, cwd)
 
   -- Claude Code / GitHub Copilot CLI の状態表示。
-  -- working（思考中）は hooks を使わず、エージェント自身がタイトルに出す
-  -- 点字スピナー(U+2800-U+28FF、UTF-8で E2 A0-A3 xx)の有無で判定する。
-  -- Escでの中断はhookが一切発火しない（Stop/agentStopは正常終了時のみ）ため、
-  -- hookのuser_var頼りだと"working"のまま張り付く。スピナーの有無を毎描画
-  -- 見るこの方式なら、中断で実際にスピナーが消えた瞬間に追従できる。
+  -- working（思考中）はどちらもhooksを使わず、エージェント自身が画面に出す
+  -- 合図の有無を毎描画チェックする方式（Claudeはtitleの点字スピナー、
+  -- Copilotは最終行の"Working"表示）。hookに頼らないので、Esc中断のような
+  -- 「終了系hookが一切発火しないケース」でも合図が消えた瞬間に追従できる。
   --
-  -- waiting/doneはhooks経由でOSC 1337 SetUserVarに書き込まれた状態を見る
-  -- （タイトルに現れない状態＝許可待ち・応答完了はhookに頼るしかない）。
-  -- Copilot CLIは2026-08時点でNotification相当のhookが無いため waiting(赤)は
-  -- 検知不能。またCopilot CLIのプロセス名・タイトルスピナーの実際の文字は
-  -- 未検証（ドキュメントベースの実装）。実機で違えばここを調整する。
+  -- waiting/doneは画面上に現れない状態（許可待ち・応答完了）なので、
+  -- 引き続きhooks経由でOSC 1337 SetUserVarに書き込まれた値を見る。
   local user_var_key, status_colors
+  local has_copilot_status = pane.user_vars and pane.user_vars.copilot_status ~= nil
   if process == 'claude' then
     user_var_key = 'claude_status'
     status_colors = { waiting = '#FE4450', done = '#50fa7b' } -- voltwave red/green
-  elseif process == 'copilot' or (process == 'node' and pane_title:find('copilot', 1, true)) then
+  elseif has_copilot_status or process == 'copilot' or process == 'copilot-cli' or (process == 'node' and pane_title:find('copilot', 1, true)) then
     user_var_key = 'copilot_status'
-    status_colors = { done = '#50fa7b' } -- voltwave green（waitingは未対応）
+    status_colors = { waiting = '#FE4450', done = '#50fa7b' } -- voltwave red/green
   end
 
   if user_var_key then
     local raw_title = pane.title or ''
     local b1, b2 = raw_title:byte(1, 2)
     local is_thinking = b1 == 0xE2 and b2 and b2 >= 0xA0 and b2 <= 0xA3
+    if not is_thinking and user_var_key == 'copilot_status' then
+      is_thinking = copilot_is_working(pane.pane_id)
+    end
 
     if is_thinking then
       local working_title = string.format(' %d. %s🤔 %s ', tab.tab_index + 1, icon, cwd)
