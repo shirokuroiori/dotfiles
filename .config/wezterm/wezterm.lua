@@ -262,11 +262,13 @@ end
 -- 最下1行だけを返す（実測確認済み）ので、毎描画呼んでもコストは軽い。
 -- 後ろのテキストは固定ではなく、skill実行中は "◉ [plan/step Loop 1/3]" の
 -- ように変わる（実機で確認済み）。"Working"という文字列ではなく、先頭の
--- ◉/◎（円形マーカー、スピナーのフレーム違いと思われる）の有無で判定する。
+-- 円形マーカーの有無で判定する。0.1秒間隔で80サンプル実測したところ、
+-- ○ ◎ ◉ ● の4フレームを回転するスピナーだった（円が満ちていくアニメーション）。
 -- ▄▀などの罫線ブロック文字(U+2580-259F)とはUTF-8の2バイト目が異なる
 -- (E2 96 vs E2 97)ため、アイドル時の枠線行を誤検知する心配はない。
 -- 許可待ち・中断・完了はどれもこの行が消えるだけで区別できないため、
 -- waiting/doneは引き続きhookに任せ、working（今動いているか）だけをこれで見る。
+local COPILOT_SPINNER_FRAMES = { '○', '◎', '◉', '●' }
 local function copilot_is_working(pane_id)
   local ok, mp = pcall(wezterm.mux.get_pane, pane_id)
   if not ok or not mp then
@@ -276,7 +278,12 @@ local function copilot_is_working(pane_id)
   if not ok2 or not last_line then
     return false
   end
-  return last_line:find('◉', 1, true) ~= nil or last_line:find('◎', 1, true) ~= nil
+  for _, frame in ipairs(COPILOT_SPINNER_FRAMES) do
+    if last_line:find(frame, 1, true) then
+      return true
+    end
+  end
+  return false
 end
 
 -- タブタイトル: アイコン + 末尾ディレクトリ名
