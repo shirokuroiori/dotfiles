@@ -45,13 +45,6 @@
         "timeoutSec": 5
       }
     ],
-    "postToolUseFailure": [
-      {
-        "type": "command",
-        "bash": "~/.copilot/hooks/wezterm-notify.sh done",
-        "timeoutSec": 5
-      }
-    ],
     "errorOccurred": [
       {
         "type": "command",
