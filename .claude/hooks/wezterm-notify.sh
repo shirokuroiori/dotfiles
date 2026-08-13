@@ -27,3 +27,9 @@ tty_path=$(wezterm cli list --format json 2>/dev/null \
   [ "$status" != "working" ] && printf '\a'
   true
 } > "$tty_path" 2>/dev/null || true
+
+# user_varはWezTerm内部のLua（format-tab-title等）からしか読めず、
+# `wezterm cli list` のJSON出力には含まれない。外部スクリプト（bin/wezterm-agents
+# など）から状態を読めるように、同じ内容をペインID別のファイルにも書いておく。
+mkdir -p /tmp/wezterm-agent-status 2>/dev/null || true
+printf '%s' "$status" > "/tmp/wezterm-agent-status/$WEZTERM_PANE" 2>/dev/null || true

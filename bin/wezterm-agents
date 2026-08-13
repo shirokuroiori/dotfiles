@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# 全WezTermペインをプロジェクト(cwd)ごとにグルーピングし、gitブランチ名・
+# エージェント状態(working/waiting/done)・直近のタスク内容を一覧表示する。
+#
+# working: ペインタイトル先頭の点字スピナー(U+2800-28FF)をバイト列で検出する
+#   （.config/wezterm/wezterm.lua の format-tab-title と同じロジック）。
+# waiting/done: .claude/hooks/wezterm-notify.sh / .copilot/hooks/wezterm-notify.sh
+#   が書き出す /tmp/wezterm-agent-status/<pane_id> を読む。pane.user_vars は
+#   `wezterm cli list` のJSON出力に含まれないため、OSC 1337 SetUserVarとは
+#   別にファイルへも書き出してもらっている。
+# タスク内容: Claude Code / Copilot CLIとも会話サマリを自分でペインタイトルに
+#   書き込むため、追加のプラグインなしで title フィールドをそのまま流用できる。
+#   working中はタイトルの中身がスピナー文字そのものなので読めるテキストでは
+#   なく、プレースホルダー表示にする。
+set -euo pipefail
+
+status_dir=/tmp/wezterm-agent-status
+
+state_icon() {
+  case "$1" in
+    working) printf '🟡' ;;
+    waiting) printf '🔴' ;;
+    done)    printf '🟢' ;;
+    *)       printf ' -' ;;
+  esac
+}
+
+is_thinking_title() {
+  local title="$1" first2
+  first2=$(printf '%s' "$title" | head -c2 | od -An -tx1 | tr -d ' \n')
+  case "$first2" in
+    e2a0|e2a1|e2a2|e2a3) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+pane_state() {
+  local pane_id="$1" title="$2"
+  if is_thinking_title "$title"; then
+    printf 'working'
+    return
+  fi
+  if [ -f "$status_dir/$pane_id" ]; then
+    cat "$status_dir/$pane_id"
+  else
+    printf 'idle'
+  fi
+}
+
+pane_desc() {
+  local state="$1" title="$2" desc
+  if [ "$state" = 'working' ]; then
+    printf '(応答生成中)'
+    return
+  fi
+  case "$title" in
+    ''|zsh|bash|nvim|vim|node|claude|copilot) printf -- '-'; return ;;
+  esac
+  desc="$title"
+  # awkのsubstrはバイト単位でマルチバイト文字を壊すため、文字単位で
+  # 切れるbashの${var:0:n}で先にトリムしておく（LANGがUTF-8前提）。
+  if [ "${#desc}" -gt 40 ]; then
+    desc="${desc:0:39}…"
+  fi
+  printf '%s' "$desc"
+}
+
+wezterm cli list --format json \
+  | jq -r '.[] | [.pane_id, .cwd, .title] | @tsv' \
+  | while IFS=$'\t' read -r pane_id cwd_uri title; do
+      cwd=${cwd_uri#file://}
+      title=${title//$'\t'/ }
+      state=$(pane_state "$pane_id" "$title")
+      branch=$(git -C "$cwd" branch --show-current 2>/dev/null || true)
+      desc=$(pane_desc "$state" "$title")
+      printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$cwd" "$pane_id" "$state" "$branch" "$(state_icon "$state")" "$desc"
+    done \
+  | sort -t $'\t' -k1,1 -k2,2n \
+  | awk -F'\t' '
+      $1 != prev {
+        if (prev != "") print ""
+        path = $1
+        sub(/\/$/, "", path)
+        n = split(path, a, "/")
+        printf "%s  (%s)\n", a[n], path
+        prev = $1
+      }
+      { printf "  %s %-8s pane %-4s %-12s %s\n", $5, $3, $2, $4, $6 }
+    '
