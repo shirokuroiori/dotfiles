@@ -1,2 +1,5 @@
 .claude/settings.local.json
 .claude/*.local.*
+
+# Rust のビルド成果物。バイナリはコミットせず install.sh でビルドする。
+tools/wezterm-agents/target/

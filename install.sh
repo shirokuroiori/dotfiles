@@ -13,6 +13,7 @@ mkdir -p "$backup_dir/lazygit"
 [ -e "$HOME/.copilot/hooks/wezterm-notify.sh" ] && { mv "$HOME/.copilot/hooks/wezterm-notify.sh" "$backup_dir/copilot-wezterm-notify.sh.bak" || exit 1; }
 [ -e "$HOME/.copilot/hooks/wezterm-notify.json" ] && { mv "$HOME/.copilot/hooks/wezterm-notify.json" "$backup_dir/copilot-wezterm-notify.json.bak" || exit 1; }
 [ -e "$HOME/.local/bin/wezterm-agents" ] && { mv "$HOME/.local/bin/wezterm-agents" "$backup_dir/wezterm-agents.bak" || exit 1; }
+[ -e "$HOME/.local/bin/wezterm-agents-tui" ] && { mv "$HOME/.local/bin/wezterm-agents-tui" "$backup_dir/wezterm-agents-tui.bak" || exit 1; }
 
 rm -rf "$HOME/.config/nvim" && ln -s "$HOME/dotfiles/.config/nvim" "$HOME/.config/nvim"
 rm -rf "$HOME/.config/wezterm" && ln -s "$HOME/dotfiles/.config/wezterm" "$HOME/.config/wezterm"
@@ -28,3 +29,24 @@ rm -rf "$HOME/.copilot/hooks/wezterm-notify.sh" && ln -s "$HOME/dotfiles/.copilo
 rm -rf "$HOME/.copilot/hooks/wezterm-notify.json" && ln -s "$HOME/dotfiles/.copilot/hooks/wezterm-notify.json" "$HOME/.copilot/hooks/wezterm-notify.json"
 mkdir -p "$HOME/.local/bin"
 rm -rf "$HOME/.local/bin/wezterm-agents" && ln -s "$HOME/dotfiles/bin/wezterm-agents" "$HOME/.local/bin/wezterm-agents"
+
+# wezterm-agents-tui (Rust製のエージェント一覧TUI)
+# docs/plans/wezterm-multi-agent-spec.md §4.1
+# バイナリはリポジトリに置かず、ここでビルドしてシンボリックリンクする。
+# コールドビルドは実測20秒。ソースが変わっていなければスキップする。
+agents_tui_src="$HOME/dotfiles/tools/wezterm-agents"
+agents_tui_bin="$agents_tui_src/target/release/wezterm-agents-tui"
+if ! command -v cargo >/dev/null 2>&1; then
+  echo "warning: cargo が無いので wezterm-agents-tui のビルドをスキップします" >&2
+  echo "         brew install rustup で導入できます" >&2
+elif [ "${WEZTERM_AGENTS_FORCE_BUILD:-}" != "1" ] && [ -x "$agents_tui_bin" ] \
+     && [ -z "$(find "$agents_tui_src/src" "$agents_tui_src/Cargo.toml" "$agents_tui_src/Cargo.lock" -newer "$agents_tui_bin" 2>/dev/null)" ]; then
+  echo "wezterm-agents-tui: 変更が無いのでビルドをスキップします"
+else
+  (cd "$agents_tui_src" && cargo build --release) \
+    || echo "warning: wezterm-agents-tui のビルドに失敗しました" >&2
+fi
+if [ -x "$agents_tui_bin" ]; then
+  rm -rf "$HOME/.local/bin/wezterm-agents-tui" \
+    && ln -s "$agents_tui_bin" "$HOME/.local/bin/wezterm-agents-tui"
+fi
