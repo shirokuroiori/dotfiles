@@ -147,11 +147,17 @@ impl Snapshot {
     }
 }
 
-/// ペインタイトル先頭の点字スピナー(U+2800-U+28FF)で「応答生成中」を判定する。
+/// ペインタイトル先頭のスピナー文字で「応答生成中」を判定する。
 ///
 /// hook ではなくエージェント自身が画面に出す合図を見るので、Esc 中断のように
 /// 終了系 hook が発火しないケースでも追従できる（wezterm.lua と同じ考え方）。
 ///
+/// 2種類ある。Claude Code のバージョンでどちらを使うか変わる
+/// （`bin/wezterm-agents` で 2.1.233 にて円形スピナーへの変更を確認済み）。
+///   - 点字スピナー ⠀-⣿ (U+2800-U+28FF)（旧 Claude Code）
+///   - 円形スピナー ◐◓◑◒ (U+25D0-U+25D3)（現行 Claude Code）
+///
+
 /// 既知の制限: Copilot CLI はタイトルにスピナーを出さず、画面最終行に
 /// ステータス行を描く。それを読むにはペインごとに `wezterm cli get-text` を
 /// 呼ぶ必要があり、1ティック1サブプロセスという方針（仕様書 §4.4）に反する。
@@ -159,7 +165,8 @@ impl Snapshot {
 /// wezterm.lua が GUI プロセス内から安価に見ているので従来どおり動く）。
 /// 置き換え対象の bash 版も同じ制限だったため、後退ではない。
 pub fn is_working_title(title: &str) -> bool {
-    matches!(title.chars().next(), Some(c) if ('\u{2800}'..='\u{28FF}').contains(&c))
+    matches!(title.chars().next(), Some(c) if
+        ('\u{2800}'..='\u{28FF}').contains(&c) || ('\u{25D0}'..='\u{25D3}').contains(&c))
 }
 
 /// タイトルからタスク表示用のテキストを作る。
@@ -167,7 +174,10 @@ pub fn is_working_title(title: &str) -> bool {
 pub fn task_from_title(title: &str) -> String {
     let trimmed = title
         .trim_start_matches(|c: char| {
-            ('\u{2800}'..='\u{28FF}').contains(&c) || c == '✳' || c.is_whitespace()
+            ('\u{2800}'..='\u{28FF}').contains(&c)
+                || ('\u{25D0}'..='\u{25D3}').contains(&c)
+                || c == '✳'
+                || c.is_whitespace()
         })
         .trim();
     match trimmed {
@@ -197,5 +207,33 @@ pub fn derive_state(working: bool, notifications: &[Notification]) -> State {
             }
         }
         _ => State::Idle,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn detects_both_spinner_styles() {
+        // 点字スピナー（旧 Claude Code）
+        assert!(is_working_title("\u{28C0} 何かの要約"));
+        // 円形スピナー（現行 Claude Code。実機の pane タイトルで確認: ◐）
+        assert!(is_working_title("◐ Wezterm マルチエージェント計画の要件分析"));
+        assert!(is_working_title("◓ x"));
+        assert!(is_working_title("◑ x"));
+        assert!(is_working_title("◒ x"));
+        // 見た目が近い別記号(◎●○◉)は誤検知しない
+        assert!(!is_working_title("◎ x"));
+        assert!(!is_working_title("● x"));
+        assert!(!is_working_title("nvim"));
+        assert!(!is_working_title(""));
+    }
+
+    #[test]
+    fn task_from_title_strips_both_spinner_styles() {
+        assert_eq!(task_from_title("◐ Wezterm マルチエージェント計画の要件分析"), "Wezterm マルチエージェント計画の要件分析");
+        assert_eq!(task_from_title("\u{28C0} タスクの要約"), "タスクの要約");
+        assert_eq!(task_from_title("✳ 通常時のタイトル"), "通常時のタイトル");
     }
 }
