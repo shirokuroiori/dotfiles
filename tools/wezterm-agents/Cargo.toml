@@ -1,5 +1,5 @@
 [package]
-name = "wezterm-agents-tui"
+name = "wezterm-agents"
 version = "0.1.0"
 edition = "2021"
 description = "WezTerm 上のAIエージェントを一覧・監視・ジャンプするTUI"

@@ -61,12 +61,12 @@ return {
   -- エージェント一覧（docs/plans/wezterm-multi-agent-spec.md §4.6）。
   -- 現在のウィンドウに新規タブでランチャーを開く。選んでジャンプすると
   -- TUI が終了し、このタブも一緒に閉じる。
-  -- 常駐で眺めたいときは `wezterm-agents-tui --watch` を直接叩く。
+  -- 常駐で眺めたいときは `wezterm-agents --watch` を直接叩く。
   {
     key = 'a',
     mods = 'CMD|SHIFT',
     action = wezterm.action.SpawnCommandInNewTab {
-      args = { os.getenv('HOME') .. '/.local/bin/wezterm-agents-tui' },
+      args = { os.getenv('HOME') .. '/.local/bin/wezterm-agents' },
     },
   },
 

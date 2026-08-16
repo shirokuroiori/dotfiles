@@ -2,18 +2,20 @@
 //! 設計は docs/plans/wezterm-multi-agent-spec.md §4。
 //!
 //! 使い方:
-//!   wezterm-agents-tui                 ランチャー。選んでジャンプしたら終了
-//!   wezterm-agents-tui --watch         常駐ダッシュボード。ジャンプしても残る
-//!   wezterm-agents-tui --print         対話なしで一覧を1回出して終了
-//!   wezterm-agents-tui --interval 3    ティック間隔(秒)を明示指定
+//!   wezterm-agents                 ランチャー。選んでジャンプしたら終了
+//!   wezterm-agents --watch         常駐ダッシュボード。ジャンプしても残る
+//!   wezterm-agents --print         対話なしで一覧を1回出して終了
+//!   wezterm-agents --interval 3    ティック間隔(秒)を明示指定
 
 mod app;
+mod memo;
 mod model;
 mod store;
 mod ui;
 mod wezterm;
 
 use std::io::{self, Stdout};
+use std::process::Command;
 use std::time::{Duration, Instant};
 
 use ratatui::crossterm::event::{
@@ -78,13 +80,13 @@ fn print_help() {
         "\
 WezTerm 上のAIエージェント一覧
 
-  wezterm-agents-tui                 ランチャー（ジャンプで終了）
-  wezterm-agents-tui --watch         常駐ダッシュボード
-  wezterm-agents-tui --print         対話なしで1回表示して終了
-  wezterm-agents-tui --interval <秒> ティック間隔を明示指定
+  wezterm-agents                 ランチャー（ジャンプで終了）
+  wezterm-agents --watch         常駐ダッシュボード
+  wezterm-agents --print         対話なしで1回表示して終了
+  wezterm-agents --interval <秒> ティック間隔を明示指定
 
 キー:
-  ↑/↓ k/j  移動      ⏎  ジャンプ    e  メモ(Phase 3)
+  ↑/↓ k/j  移動      ⏎  ジャンプ    e  メモ編集
   r 既読    R 全既読   /  絞り込み    g  即時更新
   Tab 詳細(幅が狭いとき)             q/Esc 終了"
     );
@@ -192,6 +194,16 @@ fn run(opts: Options) -> Result<(), String> {
     let mut app = App::new(!opts.watch);
     app.refresh();
     app.gc_once();
+    // メモの stale GC（仕様書 §5.2）。ペインの GC（app.gc_once）と同じく
+    // 起動時に1回だけ。tab_id は同じタブに複数ペインがあると重複するが、
+    // gc_stale 側は最初に見つかった cwd で判定するだけなので実害はない。
+    let live_tabs: Vec<(u64, String)> = app
+        .snapshot
+        .groups
+        .iter()
+        .flat_map(|g| g.panes.iter().map(|p| (p.tab_id, p.cwd.clone())))
+        .collect();
+    memo::gc_stale(&live_tabs);
 
     let mut terminal = setup_terminal().map_err(|e| format!("端末の初期化に失敗: {e}"))?;
     let result = event_loop(&mut terminal, &mut app, &opts);
@@ -257,6 +269,15 @@ fn event_loop(
             }
         }
 
+        // エディタは Terminal を握るので、Terminal を持たない handle_key では
+        // 起動できない。ここでフラグを見て、代替スクリーンを一時的に抜けて
+        // 起動する（仕様書 §5.3）。
+        if let Some((tab_id, cwd)) = app.pending_edit.take() {
+            if let Err(e) = open_editor(terminal, tab_id, &cwd) {
+                app.message = Some(e);
+            }
+        }
+
         app.tick_pending_exit();
         if app.should_quit {
             return Ok(());
@@ -266,6 +287,42 @@ fn event_loop(
             app.refresh();
             last_tick = Instant::now();
         }
+    }
+}
+
+/// メモを `$VISUAL`/`$EDITOR`/`nvim`/`vi` で編集する（仕様書 §5.3）。
+/// 代替スクリーンを抜けてエディタに端末を明け渡し、終了後に再描画する。
+fn open_editor(
+    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    tab_id: u64,
+    cwd: &str,
+) -> Result<(), String> {
+    let path = memo::ensure_file(tab_id, cwd).map_err(|e| format!("メモの作成に失敗: {e}"))?;
+
+    disable_raw_mode().map_err(|e| format!("raw mode 解除に失敗: {e}"))?;
+    execute!(
+        terminal.backend_mut(),
+        DisableFocusChange,
+        LeaveAlternateScreen
+    )
+    .map_err(|e| format!("代替スクリーンの解除に失敗: {e}"))?;
+
+    let editor = memo::resolve_editor();
+    let status = Command::new(&editor).arg(&path).status();
+
+    // エディタが失敗しても、端末は必ずTUI用の状態に戻す。
+    let resume = (|| -> io::Result<()> {
+        execute!(terminal.backend_mut(), EnterAlternateScreen, EnableFocusChange)?;
+        enable_raw_mode()?;
+        terminal.clear()
+    })();
+
+    resume.map_err(|e| format!("端末の復帰に失敗: {e}"))?;
+
+    match status {
+        Ok(s) if s.success() => Ok(()),
+        Ok(s) => Err(format!("{editor} が異常終了しました ({s})")),
+        Err(e) => Err(format!("{editor} の起動に失敗: {e}")),
     }
 }
 
@@ -323,11 +380,7 @@ fn handle_key(app: &mut App, key: KeyEvent) {
             app.message = None;
         }
         KeyCode::Tab => app.show_detail_fullscreen = !app.show_detail_fullscreen,
-        KeyCode::Char('e') => {
-            // メモは Phase 3。存在しない機能を黙って無視すると壊れて見えるので、
-            // 未実装であることをフッターに出す。
-            app.message = Some("メモ機能は Phase 3 で実装します".into());
-        }
+        KeyCode::Char('e') => app.request_edit(),
         _ => {}
     }
 }

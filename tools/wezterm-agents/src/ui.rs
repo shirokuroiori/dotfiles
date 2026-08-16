@@ -8,6 +8,7 @@ use ratatui::Frame;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::app::{App, Row};
+use crate::memo;
 use crate::model::*;
 
 /// 詳細ペインを畳む幅の閾値（仕様書 §4.2）。
@@ -295,11 +296,32 @@ fn draw_detail(f: &mut Frame, area: Rect, app: &App) {
 
     lines.push(Line::from(""));
     lines.push(section("メモ", inner.width));
-    // メモ機能は Phase 3。ここは意図的なプレースホルダ。
-    lines.push(Line::from(Span::styled(
-        "  （Phase 3 で実装。`e` で編集できるようになる予定）",
-        Style::default().fg(COLOR_DIM),
-    )));
+    // 「# メモ」節（人間の自由編集領域）だけを見せる。「## ログ」は
+    // hook が書く場所で、ここには出さない（仕様書 §5.1 の役割分担）。
+    // ファイル I/O はここで発生するが、draw() は入力かティックのたびに
+    // 高々1回しか呼ばれないので、format-tab-title の話（毎フレーム・
+    // GUIレンダースレッド）とは事情が違う（§3.2.1 の制約はここには適用外）。
+    match memo::read_preview(p.tab_id) {
+        Some(body) => {
+            const MAX_LINES: usize = 8;
+            let body_lines: Vec<&str> = body.lines().collect();
+            for line in body_lines.iter().take(MAX_LINES) {
+                lines.push(Line::from(Span::raw(format!("  {line}"))));
+            }
+            if body_lines.len() > MAX_LINES {
+                lines.push(Line::from(Span::styled(
+                    format!("  … 他 {} 行（`e` で全文編集）", body_lines.len() - MAX_LINES),
+                    Style::default().fg(COLOR_DIM),
+                )));
+            }
+        }
+        None => {
+            lines.push(Line::from(Span::styled(
+                "  （まだメモはありません。`e` で編集）",
+                Style::default().fg(COLOR_DIM),
+            )));
+        }
+    }
 
     f.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), inner);
 }

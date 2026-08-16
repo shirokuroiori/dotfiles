@@ -36,6 +36,9 @@ pub struct App {
     /// ジャンプが成立すれば自分のペインは必ず FocusLost を受け取るので、
     /// それを終了の合図にする。届かない場合の保険として締め切りも持つ。
     pub pending_exit: Option<std::time::Instant>,
+    /// `e` が押された次のティックで main.rs がエディタを起動するためのフラグ。
+    /// app.rs は Terminal を持たないので、実際の起動処理は main.rs 側で行う。
+    pub pending_edit: Option<(u64, String)>,
     store: Store,
     self_pane: Option<u64>,
 }
@@ -56,6 +59,7 @@ impl App {
             should_quit: false,
             exit_on_jump,
             pending_exit: None,
+            pending_edit: None,
             store: Store::new(),
             self_pane,
         }
@@ -236,5 +240,13 @@ impl App {
             Store::mark_read(id);
         }
         self.refresh();
+    }
+
+    /// `e` キー。実際のエディタ起動は main.rs 側（Terminal を持っている）に
+    /// フラグで委譲する（仕様書 §5.3）。
+    pub fn request_edit(&mut self) {
+        if let Some(p) = self.selected_pane() {
+            self.pending_edit = Some((p.tab_id, p.cwd.clone()));
+        }
     }
 }
