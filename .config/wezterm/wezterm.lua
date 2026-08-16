@@ -1,5 +1,9 @@
 -- Pull in the wezterm API
 local wezterm = require 'wezterm'
+-- マルチエージェント一覧（docs/plans/wezterm-multi-agent-spec.md）向けのハンドラ。
+-- ペインジャンプと既読管理を持つ。format-tab-title からは is_dismissed() だけを
+-- 呼ぶこと（テーブル参照のみ。ここに I/O を持ち込まない。仕様書 §3.2.1）。
+local agents = require 'agents'
 -- This will hold the configuration.
 local config = wezterm.config_builder()
 
@@ -350,7 +354,13 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
     end
 
     if pane.user_vars then
-      local status_color = status_colors[pane.user_vars[user_var_key]]
+      local status = pane.user_vars[user_var_key]
+      -- 既読になった done は idle 扱いにして通常色へ戻す（仕様書 §3）。
+      -- waiting は「実際に入力を求められている」状態なので、既読でも赤を維持する。
+      if status == 'done' and agents.is_dismissed(pane.pane_id) then
+        status = nil
+      end
+      local status_color = status_colors[status]
       if status_color then
         -- 選択中タブは指マーク(nf-fa-hand_o_right)で区別できるので、
         -- 非選択タブの減彩はもう不要。両方フル彩度のステータス色でよい。

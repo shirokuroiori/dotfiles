@@ -58,6 +58,18 @@ return {
     action = wezterm.action.PaneSelect { mode = 'Activate' },
   },
 
+  -- エージェント一覧（docs/plans/wezterm-multi-agent-spec.md §4.6）。
+  -- 現在のウィンドウに新規タブでランチャーを開く。選んでジャンプすると
+  -- TUI が終了し、このタブも一緒に閉じる。
+  -- 常駐で眺めたいときは `wezterm-agents-tui --watch` を直接叩く。
+  {
+    key = 'a',
+    mods = 'CMD|SHIFT',
+    action = wezterm.action.SpawnCommandInNewTab {
+      args = { os.getenv('HOME') .. '/.local/bin/wezterm-agents-tui' },
+    },
+  },
+
   -- コピーモード（デフォルトは選択モードが残ったまま入るため、
   -- 入った直後に ClearSelectionMode して「選択なしで閲覧」から始める）
   -- v: 文字選択 / V: 行選択 / y: コピーして抜ける / q, Esc: 抜ける
