@@ -342,8 +342,17 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
 
   if user_var_key then
     local raw_title = pane.title or ''
-    local b1, b2 = raw_title:byte(1, 2)
+    local b1, b2, b3 = raw_title:byte(1, 3)
+    -- 点字スピナー U+2800-28FF（旧Claude Code）。このブロックは2バイト目
+    -- (A0-A3)だけで全256コードポイントを覆うので3バイト目は見なくてよい。
     local is_thinking = b1 == 0xE2 and b2 and b2 >= 0xA0 and b2 <= 0xA3
+    -- 円形スピナー ◐◓◑◒ = U+25D0-25D3（現行Claude Code、2.1.233で確認）。
+    -- 実行ファイル中の frame 定義 `["◐","◓","◑","◒"]` より。
+    -- 同じUTF-8 2バイト目(97)を使う他の記号（●U+25CF等、別UIの状態アイコン）
+    -- と誤検知しないよう3バイト目まで絞る。
+    if not is_thinking then
+      is_thinking = b1 == 0xE2 and b2 == 0x97 and b3 and b3 >= 0x90 and b3 <= 0x93
+    end
     if not is_thinking and user_var_key == 'copilot_status' then
       is_thinking = copilot_is_working(pane.pane_id)
     end
