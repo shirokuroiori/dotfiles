@@ -1,18 +1,34 @@
 -- Pull in the wezterm API
 local wezterm = require 'wezterm'
--- マルチエージェント一覧（docs/plans/wezterm-multi-agent-spec.md）向けのハンドラ。
--- ペインジャンプと既読管理を持つ。format-tab-title からは is_dismissed() だけを
--- 呼ぶこと（テーブル参照のみ。ここに I/O を持ち込まない。仕様書 §3.2.1）。
-local agents = require 'agents'
+-- マルチエージェント一覧向けのプラグイン。2026-09-13 に dotfiles モノレポから
+-- 独立リポジトリへ分離した: https://github.com/shirokuroiori/wezterm-agents
+-- （履歴は git-filter-repo で移植済み。旧 tools/wezterm-agents はこのリポジトリ
+-- からは削除し、開発は ~/sources/wezterm-agents で続ける）。
+--
+-- ペインジャンプと既読管理（TUI の状態ファイル）は apply_to_config が常時配線する。
+-- タブ描画はこのファイル側で持っているので tab_title は有効にせず、
+-- format-tab-title の中から agents.status() を呼んで状態だけを合成する
+-- （~/sources/wezterm-agents/plugin/init.lua のコメント参照）。
+--
+-- 【wezterm.plugin.require ではなく dofile】分離先は独立 git リポジトリに
+-- なったので `wezterm.plugin.require 'file:///Users/io/sources/wezterm-agents'`
+-- も動くようになったが、あえて使わない: `wezterm.plugin.require` は2回目以降の
+-- 呼び出しではクローンを自動更新しない（公式ドキュメント）ため、開発中に
+-- ローカルの変更を反映するにはプラグインキャッシュを手動で消す必要がある。
+-- 今のように頻繁に編集する間は `dofile` の方が摩擦が無い（公開APIは同じ M
+-- テーブルなので、開発が落ち着いたら切り替えは呼び出し側のこの1行だけで済む）。
+local agents = dofile(os.getenv 'HOME' .. '/sources/wezterm-agents/plugin/init.lua')
 -- This will hold the configuration.
 local config = wezterm.config_builder()
+
+agents.apply_to_config(config, { tab_title = false, bell_toast = true, debug = true })
 
 -- タブバー帯（ファンシータブの titlebar 下地）。colors/voltwave.toml の background / tab_bar.background と揃える
 local tab_bar_strip_bg = "#200933"
 
 -- ウィンドウ外周の枠線（window_frame）。現状 width 0 だが、voltwave の win_separator（split）に合わせておく
-local frame_border_width = "0px"
-local frame_border_color = "#8c57c7"
+local frame_border_width = "1px"
+local frame_border_color = "#5a3a86"
 
 -- カスタムカラースキームの定義
 config.color_schemes = require 'color_schemes'
@@ -122,7 +138,7 @@ config.max_fps = 120
 --       aaaaaaaaaaaaaaa♻️aaa
 -- color schema
 config.color_scheme = "voltwave"
-config.window_background_opacity = 0.75
+-- config.window_background_opacity = 0.75
 
 -- macOS の背景ブラーは「文字のコントラストを削る」最大の要因。実測（ハイフンのピーク強度）:
 --   不透明                 81.8  (Ghostty 不透明 = 80.8 とほぼ同じ)
@@ -175,6 +191,11 @@ config.use_fancy_tab_bar = false
 
 -- タブの追加ボタンを非表示
 config.show_new_tab_button_in_tab_bar = false
+
+-- タブ1つの最大セル幅。既定の16だと ' 1. 󱚤 dotfiles ' + 選択マーカー2セル + 右余白3セル
+-- で溢れて末尾が切り落とされるため広げる（format-tab-title の戻り値は
+-- この幅で切り詰められる）。
+config.tab_max_width = 32
 
 -- 角丸の内側にグリッドを収める＋タブバー左端の余裕。
 -- bottom は 0 にして Neovim のステータスラインと下枠の間の「空き帯」を減らす。
@@ -234,11 +255,15 @@ smart_splits.apply_to_config(config, {
 })
 
 
--- タブ配色。voltwave.toml の [colors.tab_bar] active_tab/inactive_tab と同じ値。
+-- タブ配色。基本は voltwave.toml の [colors.tab_bar] に揃えるが、非アクティブは
+-- toml の値（bg #241B2F / fg #6B7A8F）だとタブバー地（#200933）に沈んで
+-- 境界が見えないため、地より一段だけ明るい色に持ち上げている。
+-- （format-tab-title が Background/Foreground を明示するので toml 側の
+--   active_tab/inactive_tab は実際には使われない。変えるならここ）
 local TAB_ACTIVE_BG   = '#2A1340'
-local TAB_INACTIVE_BG = '#241B2F'
+local TAB_INACTIVE_BG = '#2F2542'
 local TAB_ACTIVE_FG   = '#72F1B8'
-local TAB_INACTIVE_FG = '#6B7A8F'
+local TAB_INACTIVE_FG = '#8B97AA'
 local TAB_ACCENT      = '#38daff' -- voltwave ansi cyan
 
 -- ステータス色を付けたタブでも「選択中かどうか」が分かるように。
@@ -246,51 +271,48 @@ local TAB_ACCENT      = '#38daff' -- voltwave ansi cyan
 -- では Underline 属性も効かなかったため、選択中タブの左端に nf-fa-hand_o_right
 -- を「枠線」代わりに立てて明示する。通常タブにも共通で適用する。
 --
--- fgを省略すると通常タブと同じ配色（選択中=TAB_ACTIVE_FG／非選択=TAB_INACTIVE_FG）になる。
-local function tab_elements(tab_is_active, text, fg)
-  local bg = tab_is_active and TAB_ACTIVE_BG or TAB_INACTIVE_BG
-  fg = fg or (tab_is_active and TAB_ACTIVE_FG or TAB_INACTIVE_FG)
-  local elements = { { Background = { Color = bg } } }
-  if tab_is_active then
-    table.insert(elements, { Foreground = { Color = TAB_ACCENT } })
-    table.insert(elements, { Text = ' \u{f0a4}' }) -- nf-fa-hand_o_right
-    table.insert(elements, { Background = { Color = bg } })
+-- 非選択タブでもマーカーは省略せず、背景色と同じ前景色で描いて「見えないが
+-- 幅は同じ」にする。省略すると選択切替のたびに右側の文字列が左右にズレて
+-- 読みづらい。空白での代替ではなく同じグリフを使うのは、Nerd Font グリフの
+-- セル幅がフォント設定によって1にも2にもなりうるため、同じ文字を出すのが
+-- 唯一確実に幅を揃える方法だから。
+--
+-- 選択中タブの背景は TAB_ACTIVE_BG をそのまま使わず、文字色を TAB_ACTIVE_TINT の
+-- 割合で混ぜた色にする。文字色と同系統の暗い色が敷かれて「文字の影」のように
+-- 見え、状態色（黄/赤/緑）が変わっても背景が追従する。0 で従来どおり、
+-- 1 で文字色と同じ（読めなくなる）。
+local TAB_ACTIVE_TINT = 0.25
+
+-- '#rrggbb' 2色を t:1-t で線形補間する。
+local function mix_hex(a, b, t)
+  local ar, ag, ab = a:match('^#(%x%x)(%x%x)(%x%x)$')
+  local br, bg_, bb = b:match('^#(%x%x)(%x%x)(%x%x)$')
+  local function lerp(x, y)
+    return math.floor(tonumber(x, 16) * (1 - t) + tonumber(y, 16) * t + 0.5)
   end
-  table.insert(elements, { Foreground = { Color = fg } })
-  table.insert(elements, { Text = text })
-  return elements
+  return string.format('#%02x%02x%02x', lerp(br, ar), lerp(bg_, ag), lerp(bb, ab))
 end
 
--- Copilot CLIはtitleにthinkingスピナーを出さない代わりに、画面最終行に
--- "◉ Working ..." のようなステータス行を描画する。get_lines_as_text(1)は
--- 最下1行だけを返す（実測確認済み）ので、毎描画呼んでもコストは軽い。
--- 後ろのテキストは固定ではなく、skill実行中は "◉ [plan/step Loop 1/3]" の
--- ように変わる（実機で確認済み）。"Working"という文字列ではなく、先頭の
--- 円形マーカーの有無で判定する。0.1秒間隔で80サンプル実測したところ、
--- ○ ◎ ◉ ● の4フレームを回転するスピナーだった（円が満ちていくアニメーション）。
--- ▄▀などの罫線ブロック文字(U+2580-259F)とはUTF-8の2バイト目が異なる
--- (E2 96 vs E2 97)ため、アイドル時の枠線行を誤検知する心配はない。
--- 許可待ち・中断・完了はどれもこの行が消えるだけで区別できないため、
--- waiting/doneは引き続きhookに任せ、working（今動いているか）だけをこれで見る。
-local COPILOT_SPINNER_FRAMES = { '○', '◎', '◉', '●' }
-local function copilot_is_working(pane_id)
-  local ok, mp = pcall(wezterm.mux.get_pane, pane_id)
-  if not ok or not mp then
-    return false
-  end
-  local ok2, last_line = pcall(function() return mp:get_lines_as_text(1) end)
-  if not ok2 or not last_line then
-    return false
-  end
-  for _, frame in ipairs(COPILOT_SPINNER_FRAMES) do
-    if last_line:find(frame, 1, true) then
-      return true
-    end
-  end
-  return false
+-- fgを省略すると通常タブと同じ配色（選択中=TAB_ACTIVE_FG／非選択=TAB_INACTIVE_FG）になる。
+local function tab_elements(tab_is_active, text, fg)
+  fg = fg or (tab_is_active and TAB_ACTIVE_FG or TAB_INACTIVE_FG)
+  local bg = tab_is_active and mix_hex(fg, TAB_ACTIVE_BG, TAB_ACTIVE_TINT) or TAB_INACTIVE_BG
+  local marker_fg = tab_is_active and TAB_ACCENT or bg
+  return {
+    { Background = { Color = bg } },
+    { Foreground = { Color = marker_fg } },
+    { Text = ' \u{f0a4}' }, -- nf-fa-hand_o_right
+    { Foreground = { Color = fg } },
+    { Text = text .. '   ' }, -- 右側に3セル分の余白を足してタブを広げる
+  }
 end
 
 -- タブタイトル: アイコン + 末尾ディレクトリ名
+--
+-- working/waiting/done の判定・アイコン・色、working 検知（Claude Code の
+-- タイトルスピナー・Copilot CLI の画面最終行ポーリング）は agents.status() に
+-- 委譲した（tools/wezterm-agents/plugin/init.lua）。プロセス別アイコンと
+-- cwd の描画はこのリポジトリ固有の見た目なのでここに残す。
 wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_width)
   local pane = tab.active_pane
 
@@ -313,6 +335,7 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
     lazygit = '󰊢 ',
     claude  = '󱚤 ',
     node    = ' ',
+    copilot = '  ',
   }
 
   local icon = icons[process] or '  '
@@ -320,97 +343,21 @@ wezterm.on('format-tab-title', function(tab, tabs, panes, config, hover, max_wid
     icon = '  '
   end
 
-  local title = string.format(' %d. %s%s ', tab.tab_index + 1, icon, cwd)
+  local title = string.format(' %d. %s%s ', tab.tab_id, icon, cwd)
 
-  -- Claude Code / GitHub Copilot CLI の状態表示。
-  -- working（思考中）はどちらもhooksを使わず、エージェント自身が画面に出す
-  -- 合図の有無を毎描画チェックする方式（Claudeはtitleの点字スピナー、
-  -- Copilotは最終行の"Working"表示）。hookに頼らないので、Esc中断のような
-  -- 「終了系hookが一切発火しないケース」でも合図が消えた瞬間に追従できる。
-  --
-  -- waiting/doneは画面上に現れない状態（許可待ち・応答完了）なので、
-  -- 引き続きhooks経由でOSC 1337 SetUserVarに書き込まれた値を見る。
-  local user_var_key, status_colors
-  local has_copilot_status = pane.user_vars and pane.user_vars.copilot_status ~= nil
-  if process == 'claude' then
-    user_var_key = 'claude_status'
-    status_colors = { waiting = '#FE4450', done = '#50fa7b' } -- voltwave red/green
-  elseif has_copilot_status or process == 'copilot' or process == 'copilot-cli' or (process == 'node' and pane_title:find('copilot', 1, true)) then
-    user_var_key = 'copilot_status'
-    status_colors = { waiting = '#FE4450', done = '#50fa7b' } -- voltwave red/green
-  end
-
-  if user_var_key then
-    local raw_title = pane.title or ''
-    local b1, b2, b3 = raw_title:byte(1, 3)
-    -- 点字スピナー U+2800-28FF（旧Claude Code）。このブロックは2バイト目
-    -- (A0-A3)だけで全256コードポイントを覆うので3バイト目は見なくてよい。
-    local is_thinking = b1 == 0xE2 and b2 and b2 >= 0xA0 and b2 <= 0xA3
-    -- 円形スピナー ◐◓◑◒ = U+25D0-25D3（現行Claude Code、2.1.233で確認）。
-    -- 実行ファイル中の frame 定義 `["◐","◓","◑","◒"]` より。
-    -- 同じUTF-8 2バイト目(97)を使う他の記号（●U+25CF等、別UIの状態アイコン）
-    -- と誤検知しないよう3バイト目まで絞る。
-    if not is_thinking then
-      is_thinking = b1 == 0xE2 and b2 == 0x97 and b3 and b3 >= 0x90 and b3 <= 0x93
-    end
-    if not is_thinking and user_var_key == 'copilot_status' then
-      is_thinking = copilot_is_working(pane.pane_id)
-    end
-
-    if is_thinking then
-      local working_title = string.format(' %d. %s🤔 %s ', tab.tab_index + 1, icon, cwd)
-      return tab_elements(tab.is_active, working_title, '#FFCC00') -- voltwave ansi yellow
-    end
-
-    if pane.user_vars then
-      local status = pane.user_vars[user_var_key]
-      -- 既読になった done は idle 扱いにして通常色へ戻す（仕様書 §3）。
-      -- waiting は「実際に入力を求められている」状態なので、既読でも赤を維持する。
-      if status == 'done' and agents.is_dismissed(pane.pane_id) then
-        status = nil
-      end
-      local status_color = status_colors[status]
-      if status_color then
-        -- 選択中タブは指マーク(nf-fa-hand_o_right)で区別できるので、
-        -- 非選択タブの減彩はもう不要。両方フル彩度のステータス色でよい。
-        return tab_elements(tab.is_active, title, status_color)
-      end
-    end
+  local st = agents.status(pane)
+  if st then
+    local status_title = string.format(' %d. %s %s ', tab.tab_id, st.icon, cwd)
+    return tab_elements(tab.is_active, status_title, st.color)
   end
 
   return tab_elements(tab.is_active, title)
 end)
 
--- claude_status/copilot_status に応じたベル通知。wezterm-notify.sh が
--- waiting/done のときだけ BEL を送ってくるので、そのままトーストとして出す
--- （working では鳴らさない）。
-config.audible_bell = 'Disabled'
-
-wezterm.on('bell', function(window, pane)
-  local status_messages = {
-    waiting = '承認/入力待ちです',
-    done    = '応答が完了しました',
-  }
-  local user_vars = pane:get_user_vars()
-  local label, status
-  if user_vars.claude_status then
-    label, status = 'Claude Code', user_vars.claude_status
-  elseif user_vars.copilot_status then
-    label, status = 'Copilot CLI', user_vars.copilot_status
-  else
-    return
-  end
-
-  local message = status_messages[status]
-  if not message then
-    return
-  end
-
-  local cwd_uri = pane:get_current_working_dir()
-  local cwd = cwd_uri and (cwd_uri.file_path:match('[^/]+/?$') or '') or ''
-
-  window:toast_notification(label .. ': ' .. cwd, message, nil, 5000)
-end)
-
 -- Finally, return the configuration to wezterm:
 return config
+
+
+
+
+
