@@ -17,6 +17,8 @@ return {
           "ts_ls",
           "lua_ls",
           "tailwindcss",
+          "rust_analyzer",
+          "markdown_oxide",
         },
       })
       local capabilities = require("blink.cmp").get_lsp_capabilities()

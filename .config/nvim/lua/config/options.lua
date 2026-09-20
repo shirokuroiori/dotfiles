@@ -1,7 +1,7 @@
 local options = {
   number = true, -- 行番号を表示
   relativenumber = true,
-  wrap = false,  -- 画面の右端で改行しない
+  wrap = true,
   expandtab = true,
   shiftwidth = 2,
   tabstop = 2,
@@ -13,6 +13,7 @@ local options = {
   signcolumn = "yes",
   --  clipboard = "unnamedplus",
   sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions",
+  updatecount = 0,
 }
 
 for k, v in pairs(options) do

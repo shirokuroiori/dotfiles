@@ -1,10 +1,17 @@
 {
   "version": 1,
   "hooks": {
+    "userPromptSubmitted": [
+      {
+        "type": "command",
+        "bash": "~/.local/bin/wezterm-agents hook --agent copilot working",
+        "timeoutSec": 5
+      }
+    ],
     "preToolUse": [
       {
         "type": "command",
-        "bash": "~/.copilot/hooks/wezterm-notify.sh pretool",
+        "bash": "~/.local/bin/wezterm-agents hook --agent copilot pretool",
         "timeoutSec": 5
       }
     ],
@@ -12,28 +19,28 @@
       {
         "type": "command",
         "matcher": "permission_prompt|elicitation_dialog",
-        "bash": "~/.copilot/hooks/wezterm-notify.sh waiting",
+        "bash": "~/.local/bin/wezterm-agents hook --agent copilot waiting",
         "timeoutSec": 5
       }
     ],
     "agentStop": [
       {
         "type": "command",
-        "bash": "~/.copilot/hooks/wezterm-notify.sh done",
+        "bash": "~/.local/bin/wezterm-agents hook --agent copilot done",
         "timeoutSec": 5
       }
     ],
     "errorOccurred": [
       {
         "type": "command",
-        "bash": "~/.copilot/hooks/wezterm-notify.sh done",
+        "bash": "~/.local/bin/wezterm-agents hook --agent copilot done",
         "timeoutSec": 5
       }
     ],
     "sessionEnd": [
       {
         "type": "command",
-        "bash": "~/.copilot/hooks/wezterm-notify.sh done",
+        "bash": "~/.local/bin/wezterm-agents hook --agent copilot done",
         "timeoutSec": 5
       }
     ]
