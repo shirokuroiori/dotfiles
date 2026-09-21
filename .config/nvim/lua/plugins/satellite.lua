@@ -6,7 +6,7 @@ return {
       current_only = false,
       winblend = 50,
       zindex = 40,
-      width = 2,
+      width = 1,
       handlers = {
         cursor = {
           enable = true,

@@ -192,10 +192,13 @@ config.use_fancy_tab_bar = false
 -- タブの追加ボタンを非表示
 config.show_new_tab_button_in_tab_bar = false
 
--- タブ1つの最大セル幅。既定の16だと ' 1. 󱚤 dotfiles ' + 選択マーカー2セル + 右余白3セル
--- で溢れて末尾が切り落とされるため広げる（format-tab-title の戻り値は
--- この幅で切り詰められる）。
-config.tab_max_width = 32
+-- タブ幅を固定してタブ境界の位置を安定させる（cwd の長さや状態アイコンの
+-- 変化で幅がガタつくと視認性が落ちるため）。実際の幅は tab_elements /
+-- fit_width 側で組み立てるが、WezTerm 側の tab_max_width が値未満だと
+-- そちらが強制的に末尾を切り詰めてしまい "…" や右マージンが丸ごと消える
+-- （実際に起きたバグ）。同じ TAB_FIXED_WIDTH を必ず両方に使うこと。
+local TAB_FIXED_WIDTH = 22
+config.tab_max_width = TAB_FIXED_WIDTH
 
 -- 角丸の内側にグリッドを収める＋タブバー左端の余裕。
 -- bottom は 0 にして Neovim のステータスラインと下枠の間の「空き帯」を減らす。
@@ -283,6 +286,19 @@ local TAB_ACCENT      = '#38daff' -- voltwave ansi cyan
 -- 1 で文字色と同じ（読めなくなる）。
 local TAB_ACTIVE_TINT = 0.25
 
+-- タブ全体を常に同じセル幅にする（cwd の文字数や状態アイコンの有無で
+-- タブ境界がガタつくと、タブ番号や位置を目で追いにくくなるため）。
+-- マーカー（' ' + nf-fa-hand_o_right）は選択状態に関わらず同じ文字を出す
+-- （非選択時は背景と同色にして「見えないが幅は同じ」にする、下記コメント参照）ので
+-- 幅は常に一定。その分を引いた残りをテキスト側の固定幅として割り当てる。
+-- TAB_FIXED_WIDTH 自体は config.tab_max_width と共有するため上の方で定義済み。
+local TAB_MARKER = ' \u{f0a4}' -- nf-fa-hand_o_right
+local TAB_MARKER_WIDTH = wezterm.column_width(TAB_MARKER)
+local TAB_TEXT_WIDTH = TAB_FIXED_WIDTH - TAB_MARKER_WIDTH
+-- テキスト側の右端1セルは常に空白の余白として確保する（切り詰め時の "…" や
+-- パディング用の空白と紛れないように、コンテンツ幅と余白は別に扱う）。
+local TAB_CONTENT_WIDTH = TAB_TEXT_WIDTH - 1
+
 -- '#rrggbb' 2色を t:1-t で線形補間する。
 local function mix_hex(a, b, t)
   local ar, ag, ab = a:match('^#(%x%x)(%x%x)(%x%x)$')
@@ -293,6 +309,34 @@ local function mix_hex(a, b, t)
   return string.format('#%02x%02x%02x', lerp(br, ar), lerp(bg_, ag), lerp(bb, ab))
 end
 
+-- 文字列を表示セル幅ちょうど width に揃える（短ければ半角スペースで埋め、
+-- 長ければ末尾を "…" に置き換えて省略を明示する）。cwd にワイド文字
+-- （日本語など）が混ざる可能性があるため、バイト数ではなく
+-- wezterm.column_width（表示カラム数）で判定する。
+local ELLIPSIS = '…'
+local ELLIPSIS_WIDTH = wezterm.column_width(ELLIPSIS)
+
+local function fit_width(str, width)
+  local w = wezterm.column_width(str)
+  if w > width then
+    local target = math.max(width - ELLIPSIS_WIDTH, 0)
+    while w > target and #str > 0 do
+      local cut = 0
+      for pos in utf8.codes(str) do
+        cut = pos
+      end
+      str = str:sub(1, cut - 1)
+      w = wezterm.column_width(str)
+    end
+    str = str .. ELLIPSIS
+    w = wezterm.column_width(str)
+  end
+  if w < width then
+    str = str .. string.rep(' ', width - w)
+  end
+  return str
+end
+
 -- fgを省略すると通常タブと同じ配色（選択中=TAB_ACTIVE_FG／非選択=TAB_INACTIVE_FG）になる。
 local function tab_elements(tab_is_active, text, fg)
   fg = fg or (tab_is_active and TAB_ACTIVE_FG or TAB_INACTIVE_FG)
@@ -301,9 +345,9 @@ local function tab_elements(tab_is_active, text, fg)
   return {
     { Background = { Color = bg } },
     { Foreground = { Color = marker_fg } },
-    { Text = ' \u{f0a4}' }, -- nf-fa-hand_o_right
+    { Text = TAB_MARKER },
     { Foreground = { Color = fg } },
-    { Text = text .. '   ' }, -- 右側に3セル分の余白を足してタブを広げる
+    { Text = fit_width(text, TAB_CONTENT_WIDTH) .. ' ' }, -- 右端1セルは常に空白の余白
   }
 end
 
@@ -356,8 +400,3 @@ end)
 
 -- Finally, return the configuration to wezterm:
 return config
-
-
-
-
-
