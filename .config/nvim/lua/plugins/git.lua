@@ -136,8 +136,24 @@ return {
       { "<leader>oc", "<cmd>Octo comment add<cr>", desc = "Add Comment" },
       { "<leader>orc", "<cmd>Octo review comments<cr>", desc = "Review Comments" },
       { "<leader>orv", "<cmd>Octo review start<cr>", desc = "Start Review" },
+      { "<leader>orR", "<cmd>Octo review resume<cr>", desc = "Resume Review" },
       { "<leader>orx", "<cmd>Octo review submit<cr>", desc = "Submit Review" },
     },
     opts = {},
+    -- octo's review file panel is hardcoded to a bottom horizontal split
+    -- (`sp` + `wincmd J` in reviews/file-panel.lua) with no config option for
+    -- position. Move it to a left vertical split instead whenever it's
+    -- (re)displayed, e.g. after `Octo review start`/`resume` or toggling it
+    -- with `<localleader>b`.
+    init = function()
+      vim.api.nvim_create_autocmd("BufWinEnter", {
+        group = vim.api.nvim_create_augroup("OctoFilePanelLeft", { clear = true }),
+        pattern = "OctoChangedFiles-*",
+        callback = function()
+          vim.cmd "wincmd H"
+          vim.cmd "vertical resize 40"
+        end,
+      })
+    end,
   },
 }
