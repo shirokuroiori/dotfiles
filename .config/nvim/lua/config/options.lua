@@ -14,6 +14,8 @@ local options = {
   --  clipboard = "unnamedplus",
   sessionoptions = "blank,buffers,curdir,folds,help,tabpages,winsize,winpos,terminal,localoptions",
   updatecount = 0,
+  -- 分割境界線を二重線に（laststatusが0のためhorizも境界として使われる。neo-treeにも適用される）
+  fillchars = "vert:║,horiz:═,horizup:╩,horizdown:╦,verthoriz:╬,vertleft:╣,vertright:╠",
 }
 
 for k, v in pairs(options) do

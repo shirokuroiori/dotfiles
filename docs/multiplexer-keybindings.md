@@ -46,3 +46,4 @@ nvim ウィンドウと wezterm ペインの境界を意識せず移動・リサ
 | wezterm のペイン      | wezterm が画面を分割した1区画。1つにつき1プロセス（shell, nvim 等） |
 | nvim のウィンドウ     | nvim 内部の分割（`:split` `:vsplit` で作る）                   |
 | nvim のバッファ       | ファイルの中身。window はバッファを表示する枠                   |
+
