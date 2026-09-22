@@ -77,6 +77,10 @@ return {
         ts_query.add_directive("set-lang-from-info-string!", function(match, _, bufnr, pred, metadata)
           local cap = pred[2]
           local node = match[cap]
+          -- Neovim 0.12+: all=false でも match[cap] は単一ノードではなく { node } で返ってくる
+          if type(node) == "table" then
+            node = node[1]
+          end
           if not node then
             return
           end
