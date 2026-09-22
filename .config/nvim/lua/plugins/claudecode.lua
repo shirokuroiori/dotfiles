@@ -28,7 +28,37 @@ return {
       { "<leader>am", "<cmd>ClaudeCodeSelectModel<cr>", desc = "Select Claude model" },
       { "<leader>ab", "<cmd>ClaudeCodeAdd %<cr>",       desc = "Add current buffer" },
       { "<leader>as", "<cmd>ClaudeCodeSend<cr>",        mode = "v",                  desc = "Send to Claude" },
-      { "<D-l>",      "<cmd>ClaudeCodeSend<cr>",        mode = "v",                  desc = "Send to Claude (Cmd+L)" },
+      { -- Visual Line mode だけ「相対パス#L開始-終了」をクリップボードへ。
+        -- 別ウィンドウで開いた Claude Code に貼り付けるための参照用テキストで、
+        -- claudecode.nvim へコンテキストを流し込む従来の挙動とは別物。
+        -- charwise/blockwise は従来どおり ClaudeCodeSend に委ねる。
+        "<D-l>",
+        function()
+          if vim.fn.mode() ~= "V" then
+            vim.api.nvim_feedkeys(
+              vim.api.nvim_replace_termcodes("<Cmd>ClaudeCodeSend<CR>", true, false, true),
+              "n",
+              false
+            )
+            return
+          end
+
+          local start_line = vim.fn.line("v")
+          local end_line = vim.fn.line(".")
+          if start_line > end_line then
+            start_line, end_line = end_line, start_line
+          end
+
+          local rel_path = vim.fn.expand("%:.")
+          local text = string.format("%s#L%d-%d", rel_path, start_line, end_line)
+          vim.fn.setreg("+", text)
+          vim.notify("Copied: " .. text)
+
+          vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "n", false)
+        end,
+        mode = "v",
+        desc = "Copy file#L range (Cmd+L, Visual Line) / Send to Claude (other visual modes)",
+      },
       {
         "<leader>as",
         "<cmd>ClaudeCodeTreeAdd<cr>",

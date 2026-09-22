@@ -3,3 +3,6 @@
 
 # Rust のビルド成果物。バイナリはコミットせず install.sh でビルドする。
 tools/wezterm-agents/target/
+
+.memo.md
+docs/tmp/

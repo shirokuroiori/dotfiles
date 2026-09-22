@@ -10,3 +10,23 @@ gui:
         - '#B6FF00'
         - bold
 
+# LazyGit runs as a :terminal job inside Neovim (see kdheepak/lazygit.nvim),
+# so $NVIM already points back at that Neovim instance's RPC socket.
+# These quit LazyGit properly (via LazyGitQuitThen in
+# .config/nvim/lua/plugins/git.lua) and then hand off to codediff.nvim, or
+# just open the plain file, in the window LazyGit was opened from -- one
+# keypress, one close, no leftover hidden LazyGit job.
+customCommands:
+  - key: '<c-v>'
+    context: 'files'
+    description: 'Close LazyGit, open selected file in CodeDiff (Neovim)'
+    loadingText: 'Closing LazyGit, opening in CodeDiff...'
+    command: >-
+      sh -c 'nvim --server "$NVIM" --remote-send "<C-\><C-n>:lua LazyGitOpenCodeDiff([[$(git rev-parse --show-toplevel)/{{.SelectedFile.Name}}]])<CR>"'
+  - key: '<c-o>'
+    context: 'files'
+    description: 'Close LazyGit, open selected file in Neovim (no diff)'
+    loadingText: 'Closing LazyGit, opening in Neovim...'
+    command: >-
+      sh -c 'nvim --server "$NVIM" --remote-send "<C-\><C-n>:lua LazyGitOpenFile([[$(git rev-parse --show-toplevel)/{{.SelectedFile.Name}}]])<CR>"'
+
