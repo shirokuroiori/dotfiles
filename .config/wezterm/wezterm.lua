@@ -224,7 +224,11 @@ config.enable_kitty_keyboard = true
 
 
 -- smart-splits.nvim keymaps
-config.keys = require 'keys'
+-- 上書きせず追記する（agents.apply_to_config が dashboard_key を先に追加しているため）
+config.keys = config.keys or {}
+for _, k in ipairs(require 'keys') do
+  table.insert(config.keys, k)
+end
 
 -- 検索モードを Esc で抜けてもパターンがペインに残り、次にコピーモードへ入ると
 -- 検索プロンプト付きのオーバーレイが開いてしまう。Esc で破棄してから閉じる。

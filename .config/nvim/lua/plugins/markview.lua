@@ -11,6 +11,14 @@ return {
     preview = {
       filetypes = { "markdown", "quarto", "rmd", "codecompanion" },
       icon_provider = "mini",
+
+      -- カーソル行だけレンダリングを解除し、生の Markdown を編集できるようにする
+      modes = { "n", "no", "c" },
+      hybrid_modes = { "n" },
+      linewise_hybrid_mode = true,
+      edit_range = { 0, 0 },
+
+      debounce = 25,
     },
     markdown_inline = {
       checkboxes = {
@@ -47,5 +55,33 @@ return {
     })
 
     require("markview").setup(opts)
+
+    -- markview は起動時の VimEnter/ColorScheme で見出しの色(MarkviewPaletteN)を
+    -- @markup.heading.N.markdown から一度だけ計算してキャッシュする。だが計算する
+    -- その瞬間はまだ nvim-treesitter 側でこのグループが各レベル別の色
+    -- (@markup.heading.N) に解決されておらず、汎用の @markup.heading (pink) に
+    -- フォールバックしてしまう。しかも markview は一度キャッシュした値を二度と
+    -- 上書きしないため、見出しが全レベル pink に固定されたままになる。
+    -- 一度キャッシュをクリアしてから再計算させることで正しい色に直す。
+    local function refresh_heading_hl()
+      for n = 1, 8 do
+        for _, suffix in ipairs({ "", "Sign", "Fg", "Bg" }) do
+          pcall(vim.api.nvim_set_hl, 0, "MarkviewPalette" .. n .. suffix, {})
+        end
+      end
+      require("markview.highlights").setup()
+    end
+
+    vim.api.nvim_create_autocmd("VimEnter", {
+      callback = function()
+        vim.schedule(refresh_heading_hl)
+      end,
+    })
+    vim.api.nvim_create_autocmd("ColorScheme", {
+      pattern = "voltwave",
+      callback = function()
+        vim.schedule(refresh_heading_hl)
+      end,
+    })
   end,
 }
