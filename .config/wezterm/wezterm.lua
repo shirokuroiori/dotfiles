@@ -10,14 +10,13 @@ local wezterm = require 'wezterm'
 -- format-tab-title の中から agents.status() を呼んで状態だけを合成する
 -- （~/sources/wezterm-agents/plugin/init.lua のコメント参照）。
 --
--- 【wezterm.plugin.require ではなく dofile】分離先は独立 git リポジトリに
--- なったので `wezterm.plugin.require 'file:///Users/io/sources/wezterm-agents'`
--- も動くようになったが、あえて使わない: `wezterm.plugin.require` は2回目以降の
--- 呼び出しではクローンを自動更新しない（公式ドキュメント）ため、開発中に
--- ローカルの変更を反映するにはプラグインキャッシュを手動で消す必要がある。
--- 今のように頻繁に編集する間は `dofile` の方が摩擦が無い（公開APIは同じ M
--- テーブルなので、開発が落ち着いたら切り替えは呼び出し側のこの1行だけで済む）。
-local agents = dofile(os.getenv 'HOME' .. '/sources/wezterm-agents/plugin/init.lua')
+-- 他ユーザーが実際に導入する手順を検証するため、ローカルパスの dofile ではなく
+-- 公開リポジトリを指す wezterm.plugin.require を使う（smart-splits.nvim と同じ
+-- 呼び出し方）。初回はここでクローンされ、以後は WezTerm のプラグインキャッシュ
+-- から読み込まれる。ローカルの変更を試すときは dofile 版に戻すこと
+-- （`wezterm.plugin.require` は2回目以降の呼び出しでクローンを自動更新しないため、
+-- 更新確認にはキャッシュの手動削除か `wezterm.plugin.update_all()` が要る）。
+local agents = wezterm.plugin.require 'https://github.com/shirokuroiori/wezterm-agents'
 -- This will hold the configuration.
 local config = wezterm.config_builder()
 
